@@ -40,7 +40,7 @@ export interface ModuleResult {
 }
 
 /** The nearest tsconfig above a directory. Open question 4 is still open. */
-function nearestTsconfig(root: string, dir: string): string | undefined {
+export function nearestTsconfig(root: string, dir: string): string | undefined {
 	let cur = dir;
 	while (cur && cur !== '.') {
 		const candidate = path.join(root, cur, 'tsconfig.json');
@@ -208,7 +208,7 @@ function findDeclarations(root: string, project: Project, shape: ModuleShape, na
 	return [];
 }
 
-function seedFunctions(decl: ts.Declaration): FunctionLike[] {
+export function seedFunctions(decl: ts.Declaration): FunctionLike[] {
 	if (isFunctionLike(decl)) return [decl];
 	if (ts.isClassDeclaration(decl)) return decl.members.filter((m) => isFunctionLike(m)) as FunctionLike[];
 	if (ts.isVariableDeclaration(decl) && decl.initializer && isFunctionLike(decl.initializer)) return [decl.initializer];
@@ -271,7 +271,7 @@ function isInModule(root: string, ws: Workspace, decl: ts.Node, inModule: Set<st
 	return inModule.has(file) || inModule.has(remapDistToSrc(root, ws, file) ?? file);
 }
 
-function resolveCallee(checker: ts.TypeChecker, call: ts.CallExpression | ts.NewExpression): { decls: ts.Declaration[]; reason?: StopReason; reasonDecls: ts.Declaration[] } {
+export function resolveCallee(checker: ts.TypeChecker, call: ts.CallExpression | ts.NewExpression): { decls: ts.Declaration[]; reason?: StopReason; reasonDecls: ts.Declaration[] } {
 	const expr = call.expression;
 	const decls: ts.Declaration[] = [];
 

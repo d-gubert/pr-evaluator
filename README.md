@@ -36,6 +36,28 @@ pnpm evaluate -- --repo ~/dev/RocketChat/worktrees/accessor-consolidation \
   --base 17dfc71b4a~1 --head 17dfc71b4a --json report.json
 ```
 
+## Symbol mode
+
+A second entry reports the same facts for one symbol, on one tree, with no diff.
+It exists to look at a number the module unit hides. Read `docs/symbol-mode.md`.
+
+```bash
+pnpm symbol -- --repo <path-to-repo> --symbol <file>#<Name>
+pnpm symbol -- --repo <path-to-repo> --symbol <Name> --compare-edges --html out.html
+```
+
+| option | meaning |
+|---|---|
+| `--symbol <ref>` | `<file>#<Name>`, `<file>#<Class>.<method>`, or a bare name to search. |
+| `--edge file\|module\|package\|repo` | where the transitive walk stops. Default `module`, which is D6. |
+| `--compare-edges` | walk at all four edges and print the four results together. |
+| `--follow-dist` | enter a sibling package through its source, not its built `.d.ts`. |
+| `--full-program` | load the whole tsconfig. Default is a lazy program. |
+| `--html <file>` | the whole report as one self-contained page. |
+| `--dot <file>` | the call graph as Graphviz. |
+
+A run costs 11s to 13s on Rocket.Chat, against 43s for the two-tree module run.
+
 ## What it reports
 
 | fact | state | decision |
@@ -99,3 +121,7 @@ the counter, so run it after every change to `src/complexity.ts`.
 | `src/report.ts` | the table view (D12) |
 | `src/git.ts` | the worktrees and the change set (D4) |
 | `src/cli.ts` | the pipeline |
+| `src/symbol.ts` | symbol mode: the six facts for one symbol, on one tree |
+| `src/symbol-report.ts` | the symbol view, plus the Graphviz export |
+| `src/symbol-html.ts` | the symbol report as one self-contained page |
+| `src/symbol-cli.ts` | the symbol entry |

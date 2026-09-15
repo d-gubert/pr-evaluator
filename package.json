@@ -7,7 +7,8 @@
     "probe": "tsx probes/call-resolution.ts",
     "evaluate": "tsx src/cli.ts",
     "crosscheck": "tsx test/complexity-crosscheck.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "symbol": "tsx src/symbol-cli.ts"
   },
   "devDependencies": {
     "@types/node": "^26.5.1",
@@ -16,6 +17,7 @@
     "typescript": "^5.9.3"
   },
   "bin": {
-    "pr-evaluate": "./src/cli.ts"
+    "pr-evaluate": "./src/cli.ts",
+    "pr-symbol": "./src/symbol-cli.ts"
   }
 }
