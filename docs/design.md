@@ -375,6 +375,54 @@ Rejected, with the reason in one line each:
 - **LSIF, Glean, Joern, madge, ts-prune, knip** — see the rejection list in
   the research file.
 
+### D17 — A local closure is not a stop
+
+D6 stops when the callee is a callback typed as a `FunctionType`, because the
+checker resolves the call to the parameter that declares it. Some of those
+stops are false. The values of the parameter are in one scope, in plain
+sight:
+
+```ts
+const undoSteps: Array<() => Promise<void>> = [];
+undoSteps.push(() => this.appSourceStorage.remove(descriptor));
+await Promise.all(undoSteps.map((undoer) => undoer()));
+```
+
+The tool reads that evidence. It resolves the callee when all of the
+following hold:
+
+1. the callee is a bare identifier;
+2. that identifier is the first parameter of a callback, and the callback is
+   the first argument of `map`, `forEach`, `filter`, `find`, `findIndex`,
+   `findLast`, `findLastIndex`, `some`, `every` or `flatMap`;
+3. the receiver of that method is a `const` whose initializer is an array
+   literal.
+
+The pass then collects the elements of the initializer and the arguments of
+every `push` and `unshift` in the scope that declares the array. It follows
+an element through one `const` hop to a function declaration. It drops the
+stop only when every other use of the array is a plain read, and when every
+element resolves to a body. A spread argument, an escape of the array to
+another function, or an element it cannot resolve keeps the stop, and the
+report still names the closures it found.
+
+**The pass moves no number.** `countFunction` already folds an anonymous
+callback into its caller through `inline`, and the call walk already visits
+a nested callback body, so the closures of the example are counted and
+walked before the pass runs. `countingUnitOf` states that rule, and the walk
+adds a closure as a node only when the closure is a counting unit of its
+own. Measured on `AppManager.add`: reach 231 and complexity 445 before and
+after, `function-type` stops 14 before and 11 after.
+
+The pass is therefore a precision fix on the stop set of D14, not a reach
+fix. A false stop costs more than a number: it tells the reviewer that a
+correct total is a floor. `--no-closures` turns the pass off, and the report
+lists every call the pass resolved, so the inference is never silent.
+
+This is the cheapest of the three ways to resolve a stop. Class hierarchy
+analysis and construction-site binding both need a program that spans the
+consumer package, and both can over-approximate. They stay open.
+
 ## Pipeline
 
 ```
@@ -504,3 +552,12 @@ These are the things we do not know yet. Each one can change the design.
     packages/apps needs two programs that disagree about the same symbol.
     We still do not know whether to load two programs and reconcile, or to
     build one synthetic tsconfig for the touched set.
+
+17. **A `for..of` over an array of functions has no stop at all.** D17
+    covers the callback parameter of `map` and its siblings. A `for..of`
+    binding takes a different path: `resolveCallee` returns the variable
+    declaration with no reason, and `seedFunctions` finds no initializer, so
+    the walk drops the edge and records nothing. That is worse than a stop,
+    because it is invisible. Decide whether to give it a stop reason, or to
+    extend D17 to it. The second choice adds nodes, so it moves the
+    complexity number, which D17 deliberately does not.

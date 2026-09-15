@@ -92,6 +92,27 @@ export function countFunction(fn: FunctionLike): Count {
 	return { own, inline };
 }
 
+/**
+ * The function whose count already includes `fn`. An anonymous callback folds
+ * into its caller through `inline`, so a walk that reaches the callback by
+ * another route must not count it a second time. Returns `fn` itself when the
+ * function is a counting unit of its own. (D17)
+ */
+export function countingUnitOf(fn: FunctionLike): FunctionLike {
+	let cur = fn;
+	while (isAnonymousCallback(cur)) {
+		const parent = enclosingFunction(cur);
+		if (!parent) return cur;
+		cur = parent;
+	}
+	return cur;
+}
+
+function enclosingFunction(node: ts.Node): FunctionLike | undefined {
+	for (let p: ts.Node | undefined = node.parent; p; p = p.parent) if (isFunctionLike(p)) return p;
+	return undefined;
+}
+
 function isAnonymousCallback(node: FunctionLike): boolean {
 	if (ts.isFunctionDeclaration(node) || ts.isMethodDeclaration(node)) return false;
 	const parent = node.parent;

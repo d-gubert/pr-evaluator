@@ -7,6 +7,7 @@
     "probe": "tsx probes/call-resolution.ts",
     "evaluate": "tsx src/cli.ts",
     "crosscheck": "tsx test/complexity-crosscheck.ts",
+    "test:closures": "tsx test/closures-fixture.ts",
     "typecheck": "tsc --noEmit",
     "symbol": "tsx src/symbol-cli.ts"
   },

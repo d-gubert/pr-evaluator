@@ -124,6 +124,13 @@ export function renderSymbol(r: SymbolReport, opts: ViewOptions = {}): string {
 		for (const s of r.stops.slice(0, rows)) out.push(`    ${pad(s.reason, 14)}${pad(s.text, 44)}${s.file}:${s.line}`);
 		if (r.stops.length > rows) out.push(`    ... and ${r.stops.length - rows} more`);
 	}
+	if (!opts.brief && r.resolved.length) {
+		out.push('  what the closure pass resolved (D17):');
+		for (const s of r.resolved.slice(0, rows)) {
+			out.push(`    ${pad(s.reason, 14)}${pad(s.text, 44)}${s.file}:${s.line}  ${s.closures} closure${s.closures === 1 ? '' : 's'}${s.complete ? '' : ', still a floor'}`);
+		}
+		if (r.resolved.length > rows) out.push(`    ... and ${r.resolved.length - rows} more`);
+	}
 
 	// ---------------------------------------------------------- call tree
 	if (!opts.brief && r.callTree.length) {
@@ -131,7 +138,7 @@ export function renderSymbol(r: SymbolReport, opts: ViewOptions = {}): string {
 		for (const t of r.callTree) {
 			const indent = '  ' + '   '.repeat(Math.max(0, t.depth));
 			if (t.stop) out.push(`${indent}✗ ${t.stop}: ${t.name}  (${t.file}:${t.line})`);
-			else out.push(`${indent}${t.depth ? '└─ ' : ''}${pad(t.name, 46 - Math.min(40, 3 * t.depth))}+${pad(String(t.own + t.inline), 5)}${t.file}:${t.line}${t.repeat ? '  (seen)' : ''}`);
+			else out.push(`${indent}${t.depth ? '└─ ' : ''}${pad(t.name, 46 - Math.min(40, 3 * t.depth))}+${pad(String(t.own + t.inline), 5)}${t.file}:${t.line}${t.via ? `  (${t.via})` : ''}${t.repeat ? '  (seen)' : ''}`);
 		}
 	}
 

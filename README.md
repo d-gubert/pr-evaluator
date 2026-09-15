@@ -53,6 +53,7 @@ pnpm symbol -- --repo <path-to-repo> --symbol <Name> --compare-edges --html out.
 | `--compare-edges` | walk at all four edges and print the four results together. |
 | `--follow-dist` | enter a sibling package through its source, not its built `.d.ts`. |
 | `--full-program` | load the whole tsconfig. Default is a lazy program. |
+| `--no-closures` | keep every `function-type` stop. The closure pass of D17 is on by default. |
 | `--html <file>` | the whole report as one self-contained page. |
 | `--dot <file>` | the call graph as Graphviz. |
 
@@ -98,6 +99,7 @@ dominates.
 ```bash
 pnpm exec tsx test/complexity-fixture.ts                       # 17 hand-counted cases
 pnpm exec tsx test/complexity-crosscheck.ts <repo> <dir>        # D13, two implementations
+pnpm exec tsx test/closures-fixture.ts                          # D17, 9 hand-counted cases
 pnpm typecheck
 ```
 
@@ -114,6 +116,7 @@ the counter, so run it after every change to `src/complexity.ts`.
 | `src/tier1.ts` | the syntactic scan and the re-export follower (D5) |
 | `src/modules.ts` | module detection, the boundary surface, the dependencies |
 | `src/complexity.ts` | the cyclomatic counter and its cross-check counter (D6) |
+| `src/closures.ts` | the local closure pass, which removes a false stop (D17) |
 | `src/tier2.ts` | the typed pass: call graph, complexity, effects (D5, D6, D7) |
 | `src/effects.ts` | the ast-grep layer (D3, D7) |
 | `src/coverage.ts` | istanbul and lcov, reduced to line hits (D9) |

@@ -19,12 +19,13 @@ import * as ts from 'typescript';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { Config } from './config.js';
-import { countFunction, isFunctionLike, type FunctionLike } from './complexity.js';
+import { countFunction, countingUnitOf, isFunctionLike, type FunctionLike } from './complexity.js';
 import { findEffects, findProvided, hasAstGrep, type Match } from './effects.js';
 import { coverageOf, type CoverageReport } from './coverage.js';
 import { buildTier1Model, moduleForFile, type ModuleShape, type Tier1Model } from './modules.js';
 import { followReexport, resolveSpec, runTier1, type Tier1 } from './tier1.js';
 import { nearestTsconfig, resolveCallee, seedFunctions } from './tier2.js';
+import { resolveLocalClosures } from './closures.js';
 import { readWorkspace, remapDistToSrc, type Workspace } from './workspace.js';
 import type { ModuleId, StopReason } from './types.js';
 
@@ -66,6 +67,8 @@ export interface CallEdge {
 	to: string;
 	line: number;
 	text: string;
+	/** Set when the edge comes from an inference, not from the checker. (D17) */
+	via?: 'closure';
 }
 
 /** A call or a type reference that leaves the walk edge. Feeds facts 3 and 4. */
@@ -100,11 +103,25 @@ export interface Stop {
 	text: string;
 }
 
+/** A call the closure pass resolved, and how. Evidence for the reader. (D17) */
+export interface Resolved {
+	reason: StopReason;
+	fromNode: string;
+	file: string;
+	line: number;
+	text: string;
+	/** How many function bodies the pass found. */
+	closures: number;
+	/** True when the pass dropped the stop, false when it only narrowed it. */
+	complete: boolean;
+}
+
 export interface WalkResult {
 	nodes: Map<string, FnNode>;
 	calls: CallEdge[];
 	crossings: Crossing[];
 	stops: Stop[];
+	resolved: Resolved[];
 	seedIds: string[];
 	truncated: boolean;
 	maxDepth: number;
@@ -205,6 +222,7 @@ export interface SymbolReport {
 	};
 	confidence: { value: number; reasons: { reason: StopReason; count: number }[] };
 	stops: Stop[];
+	resolved: Resolved[];
 	crossings: Crossing[];
 	callers: { scanned: number; sites: CallerSite[]; skipped: number };
 	callTree: TreeLine[];
@@ -226,6 +244,8 @@ export interface TreeLine {
 	repeat: boolean;
 	stop?: StopReason;
 	crossing?: string;
+	/** Set when the edge comes from an inference, not from the checker. (D17) */
+	via?: 'closure';
 }
 
 export interface EdgeComparison {
@@ -254,6 +274,8 @@ export interface SymbolInput {
 	compareEdges?: boolean;
 	/** Follow a call into a sibling package by its source, not its `dist`. */
 	followDist?: boolean;
+	/** Resolve a `function-type` callee to the closures one scope holds. (D17) */
+	closures?: boolean;
 	treeLines?: number;
 	log?: (s: string) => void;
 }
@@ -572,12 +594,13 @@ function walk(
 	checker: ts.TypeChecker,
 	seeds: FunctionLike[],
 	edge: EdgeTest,
-	opts: { maxDepth: number; maxNodes: number; references: boolean; throughDist?: Redirect },
+	opts: { maxDepth: number; maxNodes: number; references: boolean; throughDist?: Redirect; closures?: boolean },
 ): WalkResult {
 	const nodes = new Map<string, FnNode>();
 	const calls: CallEdge[] = [];
 	const crossings: Crossing[] = [];
 	const stops: Stop[] = [];
+	const resolved: Resolved[] = [];
 	const seen = new Set<string>();
 	const crossKey = new Map<string, Crossing>();
 	let truncated = false;
@@ -635,7 +658,29 @@ function walk(
 			if (ts.isCallExpression(n) || ts.isNewExpression(n)) {
 				const callText = oneLine(n.expression.getText()).slice(0, 80);
 				const target = resolveCallee(checker, n);
-				if (target.reason === 'unresolved' || target.reason === 'dynamic') {
+				// A `function-type` callee is often a closure that one scope
+				// holds in plain sight. Read that evidence before we call the
+				// number a floor. (D17)
+				const found = opts.closures !== false && target.reason === 'function-type' ? resolveLocalClosures(checker, n, target.reasonDecls) : undefined;
+				let accounted = found?.complete ?? false;
+				for (const closure of found?.decls ?? []) {
+					if (!edge.inside(closure.getSourceFile().fileName)) continue; // the walk edge
+					const unit = countingUnitOf(closure);
+					if (unit !== closure) {
+						// Its count already sits in the enclosing function
+						// through `inline`, and that body is already walked.
+						if (!seen.has(fnId(unit))) accounted = false;
+						continue;
+					}
+					calls.push({ from: id, to: fnId(closure), line: lineOf(n), text: callText, via: 'closure' });
+					if (!seen.has(fnId(closure))) queue.push({ fn: closure, depth: depth + 1 });
+				}
+				if (found && target.reason) {
+					resolved.push({ reason: target.reason, fromNode: id, file: node.file, line: lineOf(n), text: callText, closures: found.decls.length, complete: accounted });
+				}
+				if (accounted) {
+					/* the closures are resolved, so this call is not a stop */
+				} else if (target.reason === 'unresolved' || target.reason === 'dynamic') {
 					stops.push({ reason: target.reason, fromNode: id, file: node.file, line: lineOf(n), text: callText });
 				} else if (target.reason && target.reasonDecls.some((d) => edge.inside(d.getSourceFile().fileName))) {
 					stops.push({ reason: target.reason, fromNode: id, file: node.file, line: lineOf(n), text: callText });
@@ -680,7 +725,7 @@ function walk(
 		else stops.push({ reason: 'interface', fromNode: id, file: node.file, line: node.start, text: `${node.name} has no body` });
 	}
 
-	return { nodes, calls, crossings, stops, seedIds, truncated, maxDepth, pending };
+	return { nodes, calls, crossings, stops, resolved, seedIds, truncated, maxDepth, pending };
 }
 
 /**
@@ -836,17 +881,21 @@ export function evaluateSymbol(input: SymbolInput): SymbolReport {
 
 	t = Date.now();
 	const followDist = input.followDist === true;
+	const closures = input.closures !== false;
 	let checker = prog.checker;
-	let w = walk(root, ws, config, checker, seeds, edge, { maxDepth, maxNodes, references, throughDist: followDist ? makeRedirect(root, ws, prog.project) : undefined });
+	let w = walk(root, ws, config, checker, seeds, edge, { maxDepth, maxNodes, references, closures, throughDist: followDist ? makeRedirect(root, ws, prog.project) : undefined });
 	for (let round = 0; followDist && w.pending.size && round < 3; round++) {
 		for (const file of w.pending) prog.project.addSourceFileAtPathIfExists(file);
 		prog.project.resolveSourceFileDependencies();
 		checker = freshChecker(prog.project);
 		log(`  follow-dist round ${round + 1}: ${w.pending.size} source files added, ${prog.project.getSourceFiles().length} in the program`);
-		w = walk(root, ws, config, checker, seeds, edge, { maxDepth, maxNodes, references, throughDist: makeRedirect(root, ws, prog.project) });
+		w = walk(root, ws, config, checker, seeds, edge, { maxDepth, maxNodes, references, closures, throughDist: makeRedirect(root, ws, prog.project) });
 	}
 	timings.walk = Date.now() - t;
 	if (followDist) notes.push('--follow-dist is on: the walk enters a sibling package through its source, not its built declaration. (D15)');
+	if (!closures) notes.push('--no-closures is on: a call through a local closure stays a `function-type` stop. (D17)');
+	const dropped = w.resolved.filter((r) => r.complete).length;
+	if (dropped) notes.push(`the closure pass resolved ${dropped} call${dropped === 1 ? '' : 's'} that the checker left as a \`function-type\` stop. (D17)`);
 	log(`  walk ${w.nodes.size} functions, ${w.crossings.length} crossings, ${w.stops.length} stops, ${timings.walk}ms`);
 	if (w.truncated) notes.push(`the walk hit a limit: depth ${maxDepth}, nodes ${maxNodes}. The numbers are a floor.`);
 
@@ -1040,6 +1089,7 @@ export function evaluateSymbol(input: SymbolInput): SymbolReport {
 		},
 		confidence: { value: confidenceValue, reasons: [...reasons].map(([reason, count]) => ({ reason, count })).sort((a, b) => b.count - a.count) },
 		stops: w.stops,
+		resolved: w.resolved,
 		crossings: w.crossings,
 		callers,
 		callTree: buildTree(w, input.treeLines ?? 80),
@@ -1055,7 +1105,7 @@ export function evaluateSymbol(input: SymbolInput): SymbolReport {
 		report.edgesCompared = EDGE_KINDS.map((kind) => {
 			const t0 = Date.now();
 			const e = makeEdge(kind, root, ws, config, ref.file);
-			const r = walk(root, ws, config, cmpChecker, seeds, e, { maxDepth, maxNodes, references: false, throughDist: redirect });
+			const r = walk(root, ws, config, cmpChecker, seeds, e, { maxDepth, maxNodes, references: false, closures, throughDist: redirect });
 			return {
 				edge: kind,
 				reach: r.nodes.size,
@@ -1205,12 +1255,12 @@ function buildTree(w: WalkResult, limit: number): TreeLine[] {
 	const out: TreeLine[] = [];
 	const seen = new Set<string>();
 
-	function emit(id: string, depth: number, line: number): void {
+	function emit(id: string, depth: number, line: number, via?: CallEdge['via']): void {
 		if (out.length >= limit) return;
 		const node = w.nodes.get(id);
 		if (!node) return;
 		const repeat = seen.has(id);
-		out.push({ depth, node: id, name: node.name, file: node.file, line: line || node.start, own: node.own, inline: node.inline, repeat });
+		out.push({ depth, node: id, name: node.name, file: node.file, line: line || node.start, own: node.own, inline: node.inline, repeat, via });
 		if (repeat) return;
 		seen.add(id);
 		for (const s of stopsBy.get(id) ?? []) {
@@ -1218,7 +1268,7 @@ function buildTree(w: WalkResult, limit: number): TreeLine[] {
 			out.push({ depth: depth + 1, node: `${id}!stop`, name: s.text, file: s.file, line: s.line, own: 0, inline: 0, repeat: false, stop: s.reason });
 		}
 		const kids = [...new Map((children.get(id) ?? []).map((c) => [c.to, c])).values()];
-		for (const c of kids) emit(c.to, depth + 1, c.line);
+		for (const c of kids) emit(c.to, depth + 1, c.line, c.via);
 	}
 	for (const seed of w.seedIds) emit(seed, 0, 0);
 	return out;

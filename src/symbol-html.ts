@@ -121,25 +121,26 @@ function badges(n) {
   if (n.coverage !== null && n.coverage !== undefined) out += '<span class="tag ' + (n.coverage > 0.5 ? 'good' : 'bad') + '">' + pct(n.coverage) + '</span>';
   return out;
 }
-function nodeLine(n, edgeLine) {
+function nodeLine(n, edgeLine, via) {
   return '<span class="fn">' + esc(n.name) + '</span>' +
     '<span class="num" style="color:var(--dim)">+' + (n.own + n.inline) + '</span>' + bar(n.own + n.inline) +
+    (via ? '<span class="tag">' + esc(via) + '</span>' : '') +
     badges(n) + '<span class="loc">' + esc(n.file) + ':' + (edgeLine || n.start) + '</span>';
 }
-function treeNode(id, line, path) {
+function treeNode(id, line, path, via) {
   const n = byId[id];
   if (!n) return '';
-  if (path.indexOf(id) !== -1) return '<li><div class="leaf">' + nodeLine(n, line) + '<span class="tag">cycle</span></div></li>';
+  if (path.indexOf(id) !== -1) return '<li><div class="leaf">' + nodeLine(n, line, via) + '<span class="tag">cycle</span></div></li>';
   const next = path.concat([id]);
   const cs = kids[id] || [];
   const seen = {}; const uniq = cs.filter((c) => seen[c.to] ? false : (seen[c.to] = true));
   const st = stopsBy[id] || [];
   let inner = '';
   st.forEach((s) => { inner += '<div class="stop">✗ ' + esc(s.reason) + ': ' + esc(s.text) + '  <span class="loc">' + esc(s.file) + ':' + s.line + '</span></div>'; });
-  if (uniq.length) inner += '<ul>' + uniq.map((c) => treeNode(c.to, c.line, next)).join('') + '</ul>';
-  if (!inner) return '<li><div class="leaf">' + nodeLine(n, line) + '</div></li>';
+  if (uniq.length) inner += '<ul>' + uniq.map((c) => treeNode(c.to, c.line, next, c.via)).join('') + '</ul>';
+  if (!inner) return '<li><div class="leaf">' + nodeLine(n, line, via) + '</div></li>';
   const open = n.depth < 3 ? ' open' : '';
-  return '<li><details' + open + '><summary><span class="caret">▸</span>' + nodeLine(n, line) + '</summary>' + inner + '</details></li>';
+  return '<li><details' + open + '><summary><span class="caret">▸</span>' + nodeLine(n, line, via) + '</summary>' + inner + '</details></li>';
 }
 
 function table(cols, rows) {
@@ -241,6 +242,15 @@ panels['stops'] = () => '<h2>where the walk stopped — a marked number is a flo
   { label: 'in', cls: 'm', get: (s) => esc((byId[s.fromNode] || {}).name || '') },
   { label: 'location', cls: 'loc', get: (s) => esc(s.file) + ':' + s.line },
 ], R.stops);
+
+if (R.resolved && R.resolved.length) panels['resolved'] = () => '<h2>what the closure pass resolved (D17)</h2>' +
+  '<p class="sub">the checker left these calls as a stop; one scope holds the function bodies</p>' + table([
+  { label: 'reason', get: (s) => '<span class="tag ' + (s.complete ? 'good' : 'warn') + '">' + esc(s.reason) + '</span>' },
+  { label: 'call', cls: 'm', get: (s) => esc(s.text) },
+  { label: 'closures', cls: 'num', get: (s) => s.closures },
+  { label: 'stop dropped', get: (s) => s.complete ? 'yes' : 'no, still a floor' },
+  { label: 'location', cls: 'loc', get: (s) => esc(s.file) + ':' + s.line },
+], R.resolved);
 
 panels['crossings'] = () => '<h2>every crossing of the ' + esc(R.edge) + ' edge — the raw path is the D15 evidence</h2>' + table([
   { label: 'kind', get: (c) => '<span class="tag">' + esc(c.kind) + '</span>' },

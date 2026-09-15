@@ -33,6 +33,7 @@ pnpm symbol -- --repo <path> --symbol <Name>          # searches the tree
 | `--dot <file>` | the call graph as Graphviz. `dot -Tsvg out.dot -o graph.svg`. |
 | `--callers-deep` | also scan every module file for call sites. It costs ~15ms per file. |
 | `--no-refs` | skip type references. Facts 3 and 4 then count calls only. |
+| `--no-closures` | keep every `function-type` stop. The closure pass of D17 is on by default. |
 | `--brief` | drop the evidence lists and keep the numbers. |
 
 ## What it reports
@@ -52,15 +53,19 @@ It also reports the confidence of D14, every stop with its source text, every
 crossing of the edge with the raw path the checker resolved, and the call sites
 of the symbol.
 
+It reports the calls the closure pass of D17 resolved as well, with the number
+of bodies it found and whether it dropped the stop. A call tree edge that the
+pass added carries a `(closure)` tag, so no inference is silent.
+
 ## The HTML view
 
 `--html out.html` writes one file that embeds the JSON and reads it back. It
 has no CDN link and no build step, so it opens from disk and it survives a
 copy to another machine.
 
-Ten panels: the call tree, the hotspots, the dependencies, the boundary, the
-effects, the coverage, the stops, the crossings, the callers, the edge
-comparison and the raw JSON. The panel name sits in the URL hash, so a link
+Eleven panels: the call tree, the hotspots, the dependencies, the boundary,
+the effects, the coverage, the stops, what the closure pass resolved, the
+crossings, the callers, the edge comparison and the raw JSON. The panel name sits in the URL hash, so a link
 points at one panel. Every table has a filter box. The page follows the
 reader's light or dark setting.
 
@@ -171,3 +176,10 @@ symbol needs one program, and a lazy program is enough.
   stands.
 - **The reference resolver is syntactic about overloads.** It returns every
   declaration with the name and walks them all.
+- **The closure pass reads one shape only.** D17 covers a `const` array that
+  the same scope fills with `push`. It does not resolve an abstract method,
+  an interface method, or a callback that a parameter carries into the
+  function. An `abstract` stop needs a program that spans the consumer
+  package, which this mode does not build.
+- **A `for..of` over an array of functions still drops its edge.** The walk
+  records no stop there, so the hole is invisible. Open question 17.

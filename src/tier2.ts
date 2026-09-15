@@ -13,7 +13,8 @@ import * as ts from 'typescript';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { Config } from './config.js';
-import { countFunction, isFunctionLike, type FunctionLike } from './complexity.js';
+import { countFunction, countingUnitOf, isFunctionLike, type FunctionLike } from './complexity.js';
+import { resolveLocalClosures } from './closures.js';
 import { findEffects, findProvided, hasAstGrep, type Match } from './effects.js';
 import { remapDistToSrc, type Workspace } from './workspace.js';
 import type { ModuleId, StopReason } from './types.js';
@@ -241,10 +242,23 @@ function walkCalls(root: string, ws: Workspace, checker: ts.TypeChecker, seeds: 
 		function visit(node: ts.Node): void {
 			if (ts.isCallExpression(node) || ts.isNewExpression(node)) {
 				const target = resolveCallee(checker, node);
+				// A `function-type` callee is often a closure that one scope
+				// holds in plain sight. Read that evidence before we call the
+				// number a floor. (D17)
+				const closures = target.reason === 'function-type' ? resolveLocalClosures(checker, node, target.reasonDecls) : undefined;
+				let accounted = closures?.complete ?? false;
+				for (const closure of closures?.decls ?? []) {
+					if (!isInModule(root, ws, closure, inModule)) continue; // the module edge
+					const unit = countingUnitOf(closure);
+					if (unit === closure) queue.push(closure);
+					else if (!reached.has(idOf(unit))) accounted = false; // its count sits in a function the walk has not reached
+				}
 				// A callee with no body outside this module is the module edge,
 				// which D6 stops at by design. Only a stop inside the module
 				// makes the number a floor. (D14)
-				if (target.reason === 'unresolved' || target.reason === 'dynamic') stops.push(target.reason);
+				if (accounted) {
+					/* the closures are resolved, so this call is not a stop */
+				} else if (target.reason === 'unresolved' || target.reason === 'dynamic') stops.push(target.reason);
 				else if (target.reason && target.reasonDecls.some((d) => isInModule(root, ws, d, inModule))) stops.push(target.reason);
 				for (const decl of target.decls) {
 					const declFile = decl.getSourceFile().fileName;
