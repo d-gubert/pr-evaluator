@@ -1,0 +1,14 @@
+{
+  "name": "pr-evaluator",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "probe": "tsx probes/call-resolution.ts"
+  },
+  "devDependencies": {
+    "ts-morph": "^28.0.0",
+    "tsx": "^4.23.13",
+    "typescript": "^5.9.3"
+  }
+}
