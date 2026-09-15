@@ -4,11 +4,18 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "probe": "tsx probes/call-resolution.ts"
+    "probe": "tsx probes/call-resolution.ts",
+    "evaluate": "tsx src/cli.ts",
+    "crosscheck": "tsx test/complexity-crosscheck.ts",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/node": "^26.5.1",
     "ts-morph": "^28.0.0",
     "tsx": "^4.23.13",
     "typescript": "^5.9.3"
+  },
+  "bin": {
+    "pr-evaluate": "./src/cli.ts"
   }
 }
