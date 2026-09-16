@@ -54,6 +54,7 @@ pnpm symbol -- --repo <path-to-repo> --symbol <Name> --compare-edges --html out.
 | `--follow-dist` | enter a sibling package through its source, not its built `.d.ts`. |
 | `--full-program` | load the whole tsconfig. Default is a lazy program. |
 | `--no-closures` | keep every `function-type` stop. The closure pass of D17 is on by default. |
+| `--from <file>` | root the program at this file, not at the symbol's file (D18). |
 | `--html <file>` | the whole report as one self-contained page. |
 | `--dot <file>` | the call graph as Graphviz. |
 

@@ -34,6 +34,7 @@ pnpm symbol -- --repo <path> --symbol <Name>          # searches the tree
 | `--callers-deep` | also scan every module file for call sites. It costs ~15ms per file. |
 | `--no-refs` | skip type references. Facts 3 and 4 then count calls only. |
 | `--no-closures` | keep every `function-type` stop. The closure pass of D17 is on by default. |
+| `--from <file>` | root the program at this file, not at the symbol's file. The walk is unchanged. (D18) |
 | `--brief` | drop the evidence lists and keep the numbers. |
 
 ## What it reports
@@ -154,6 +155,35 @@ the program load (1.5s to 3.6s) dominate. The walk itself costs 45ms to 308ms.
 This says that open questions 4 and 16 are cheaper at the symbol level. One
 symbol needs one program, and a lazy program is enough.
 
+### 5. A call-site anchor changes the program, not the checker
+
+`AppManager.add` calls `this.appSourceStorage.store`, and the field is typed
+as an abstract class, so the walk stops. The concrete class is supplied in
+`apps/meteor`, which the program of `packages/apps` never loads.
+
+`--from apps/meteor/ee/server/apps/communication/rest.ts` roots the program at
+a consumer. `probes/call-site-anchor.ts` then reports what that program holds:
+3 subclasses of `AppSourceStorage`, 1 of `AppMetadataStorage`, 1 of
+`AppBridges`, all instantiated, and one `new AppManager` site that binds the
+two storage fields to `ConfigurableAppSourceStorage` and `AppRealStorage`.
+
+The checker is not helped. It reports the same 20 `abstract` and 3 `interface`
+results on the storage calls of `AppManager.ts` from either anchor.
+
+`AppManager.add`, with and without the flag:
+
+| | without | with |
+|---|---|---|
+| reach, complexity | 231, 445 | 231, 445 |
+| stops | 75 | 75 |
+| direct modules, indirect modules | 0, 0 | 1, 1 |
+| program | 650 files, 1.2s | 929 files, 5.8s |
+
+Fact 2 and the stop set hold. Facts 3 and 4 move, and the wider program is
+right: the narrow one resolves `@rocket.chat/apps-engine` to
+`packages/apps-engine/definition/**.d.ts`, a build output at the package root
+that the D15 remap does not know. Open question 18.
+
 ## Which open questions it feeds
 
 | question | what symbol mode gives |
@@ -183,3 +213,6 @@ symbol needs one program, and a lazy program is enough.
   package, which this mode does not build.
 - **A `for..of` over an array of functions still drops its edge.** The walk
   records no stop there, so the hole is invisible. Open question 17.
+- **`--from` resolves no stop by itself.** It widens the program so that class
+  hierarchy analysis and construction-site binding become possible. Neither is
+  built. `probes/call-site-anchor.ts` measures what the wider program holds.

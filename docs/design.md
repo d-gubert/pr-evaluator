@@ -423,6 +423,57 @@ This is the cheapest of the three ways to resolve a stop. Class hierarchy
 analysis and construction-site binding both need a program that spans the
 consumer package, and both can over-approximate. They stay open.
 
+### D18 — The program root and the measured symbol are two things
+
+`loadProgram` derived the tsconfig from the symbol's own file, so a question
+about `AppManager.add` loaded the tsconfig of `packages/apps`. That program
+holds 650 files, and it holds neither the orchestrator that constructs the
+manager nor any concrete storage class. Every way to resolve an `abstract`
+stop needs those declarations.
+
+`--from <file>` separates the two. The file names where the program is
+rooted; `--symbol` still names what to measure. The tsconfig comes from the
+`--from` file, the lazy program is seeded with it, and the symbol's own file
+joins the program afterwards, so the walk starts where it always did.
+
+What the wider program holds, measured from
+`apps/meteor/ee/server/apps/communication/rest.ts`
+(`probes/call-site-anchor.ts`):
+
+| base class | subclasses now in the program | instantiated |
+|---|---|---|
+| `AppSourceStorage` | `AppFileSystemSourceStorage`, `AppGridFSSourceStorage`, `ConfigurableAppSourceStorage` | all 3 |
+| `AppMetadataStorage` | `AppRealStorage` | yes |
+| `AppBridges` | `RealAppBridges` (a `.js` file) | yes |
+
+The construction site is there too, and it is exact: one `new AppManager`,
+at `orchestrator.ts:133`, which binds `appSourceStorage` to
+`ConfigurableAppSourceStorage` and `appMetadataStorage` to `AppRealStorage`.
+
+**The flag resolves nothing by itself.** The checker reports the same 20
+`abstract` and 3 `interface` results on the storage calls of `AppManager.ts`
+from either anchor, because the declared type of the field does not change.
+`--from` is the prerequisite for class hierarchy analysis and for
+construction-site binding, not a substitute for them.
+
+Measured on `AppManager.add`, with and without the flag:
+
+| | without | with |
+|---|---|---|
+| reach, transitive complexity | 231, 445 | 231, 445 |
+| stops | 75 | 75 |
+| the stop set and the node set | identical | identical |
+| direct module dependencies | 0 | 1 |
+| indirect module dependencies | 0 | 1 |
+| program | 650 files, 1.2s | 929 files, 5.8s |
+
+Fact 2 and the stop set do not move. Facts 3 and 4 do, and the wider program
+is the correct one: the two programs resolve `@rocket.chat/apps-engine`
+through different paths, and only one of them survives the D15 remap. Open
+question 18 holds that gap.
+
+The cost is the program. The flag is opt-in for that reason.
+
 ## Pipeline
 
 ```
@@ -561,3 +612,13 @@ These are the things we do not know yet. Each one can change the design.
     because it is invisible. Decide whether to give it a stop reason, or to
     extend D17 to it. The second choice adds nodes, so it moves the
     complexity number, which D17 deliberately does not.
+
+18. **A package that builds to its own root.** `packages/apps-engine` emits
+    `definition/**.d.ts` beside `src/`, with no `dist/` segment and no
+    `node_modules` segment. `remapDistToSrc` knows `<pkg>/dist/**` only, so
+    the path never reaches `packages/apps-engine/src`, D1 matches no module,
+    and fact 3 reports zero module dependencies for a symbol that plainly has
+    one. D18 exposed it: the same symbol reports 1 module when the program is
+    rooted at a consumer, because that path goes through `node_modules` and
+    the remap does cover that shape. This is a fourth shape for D15, not a
+    fourth trap in the same one.

@@ -37,6 +37,7 @@ export function renderSymbol(r: SymbolReport, opts: ViewOptions = {}): string {
 	if (id.overloads > 1) out.push(`declarations ${id.overloads} (overloads or a merged declaration)`);
 	out.push(`module     ${r.context.module ?? '(none: no D1 pattern matches)'}${r.context.moduleFiles === undefined ? '' : `  ${r.context.moduleFiles} files`}${r.context.moduleEntry ? `  entry ${r.context.moduleEntry}` : '  no entry file'}`);
 	out.push(`package    ${r.context.package ?? '(none)'}${r.context.packageDir ? `  ${r.context.packageDir}` : ''}  tsconfig ${r.context.tsconfig ?? '(none)'}`);
+	if (r.context.programRoot) out.push(`program    rooted at ${r.context.programRoot}  (--from)`);
 	out.push(`edge       ${r.edge}   walk depth ${r.facts.complexity.depth}   reach ${r.facts.complexity.reach} functions`);
 	out.push(`tree       ${r.tree.files} files scanned by tier 1`);
 	out.push(`timings    ${Object.entries(r.timings).map(([k, v]) => `${k} ${v}ms`).join('   ')}`);

@@ -289,6 +289,7 @@ function head() {
   const meta = [['declared', id.kind + '  ' + id.file + ':' + id.start + '-' + id.end + (id.exported ? '  exported' : '  internal')],
     ['module', (c.module || 'none: no D1 pattern matches') + (c.moduleFiles ? '  (' + c.moduleFiles + ' files)' : '')],
     ['package', (c.package || 'none') + '  ' + (c.tsconfig || '')],
+    ...(c.programRoot ? [['program root', c.programRoot + '   (--from)']] : []),
     ['walk edge', R.edge + '   depth ' + f.complexity.depth],
     ['tree', R.tree.files + ' files scanned by tier 1'],
     ['timings', Object.keys(R.timings).map((k) => k + ' ' + R.timings[k] + 'ms').join('   ')]];

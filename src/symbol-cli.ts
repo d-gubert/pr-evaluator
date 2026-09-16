@@ -10,6 +10,7 @@
  *   pr-symbol --repo <path> --symbol <file>#<Name>
  *   pr-symbol --symbol <file>#<Class>.<method> --edge package --compare-edges
  *   pr-symbol --symbol <Name> --no-closures      # keep every function-type stop
+ *   pr-symbol --symbol <file>#<Name> --from <consumer file>   # widen the program
  *   pr-symbol --symbol <Name> --html report.html
  *   pr-symbol --symbol <Name>            # a bare name searches the tree
  */
@@ -56,6 +57,7 @@ function main(): void {
 			compareEdges: flag('compare-edges'),
 			followDist: flag('follow-dist'),
 			closures: !flag('no-closures'),
+			from: arg('from'),
 			treeLines: Number(arg('tree', '80')),
 			log,
 		});

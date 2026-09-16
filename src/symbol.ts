@@ -176,6 +176,8 @@ export interface SymbolReport {
 		package?: string;
 		packageDir?: string;
 		tsconfig?: string;
+		/** The file the program is rooted at, when `--from` moved it. (D18) */
+		programRoot?: string;
 		isTestFile: boolean;
 	};
 	facts: {
@@ -276,6 +278,11 @@ export interface SymbolInput {
 	followDist?: boolean;
 	/** Resolve a `function-type` callee to the closures one scope holds. (D17) */
 	closures?: boolean;
+	/**
+	 * Root the program at this file instead of the symbol's own file, so the
+	 * program spans the consumer that supplies a concrete type. (D18)
+	 */
+	from?: string;
 	treeLines?: number;
 	log?: (s: string) => void;
 }
@@ -472,14 +479,23 @@ function isExported(decl: ts.Declaration): boolean {
  * The prototype defaults to `lazy` and it reports both the file count and the
  * load time, so the cost of the choice is visible in every run.
  */
-function loadProgram(root: string, file: string, mode: 'lazy' | 'full'): { project: Project; checker: ts.TypeChecker; tsconfig?: string; files: number; ms: number } {
+function loadProgram(root: string, file: string, mode: 'lazy' | 'full', from?: string): { project: Project; checker: ts.TypeChecker; tsconfig?: string; files: number; ms: number } {
 	const t0 = Date.now();
-	const tsconfig = nearestTsconfig(root, path.dirname(file));
+	// `from` picks the tsconfig and seeds the program. The symbol's own file
+	// joins it afterwards, so the walk still starts where the symbol is. (D18)
+	const seedFile = from ?? file;
+	const tsconfig = nearestTsconfig(root, path.dirname(seedFile));
 	const project =
 		mode === 'full' && tsconfig
 			? new Project({ tsConfigFilePath: tsconfig, skipAddingFilesFromTsConfig: false })
 			: new Project({ tsConfigFilePath: tsconfig, skipAddingFilesFromTsConfig: true });
 	if (mode === 'lazy' || !tsconfig) {
+		project.addSourceFileAtPath(path.join(root, seedFile));
+		project.resolveSourceFileDependencies();
+	}
+	if (!project.getSourceFile(path.join(root, file))) {
+		// The consumer resolves a sibling package to `dist/*.d.ts`, so the
+		// symbol's source file is absent. Add it. (D15)
 		project.addSourceFileAtPath(path.join(root, file));
 		project.resolveSourceFileDependencies();
 	}
@@ -859,9 +875,14 @@ export function evaluateSymbol(input: SymbolInput): SymbolReport {
 	log(`  tier 1 ${t1.files.size} files ${t1.ms}ms, ${graph.modules.size} modules`);
 
 	const ref = parseRef(t1, root, input.ref);
-	const prog = loadProgram(root, ref.file, input.program ?? 'lazy');
+	const from = input.from ? normaliseFile(t1, root, input.from) : undefined;
+	const prog = loadProgram(root, ref.file, input.program ?? 'lazy', from);
 	timings.program = prog.ms;
-	log(`  program ${input.program ?? 'lazy'} ${prog.files} files ${prog.ms}ms`);
+	log(`  program ${input.program ?? 'lazy'} ${prog.files} files ${prog.ms}ms${from ? `, rooted at ${from}` : ''}`);
+	if (from) {
+		notes.push(`--from is on: the program is rooted at ${from}, so it spans that consumer. The walk still starts at the symbol. (D18)`);
+		if (from === ref.file) notes.push('--from names the file the symbol is in, so it changed nothing.');
+	}
 
 	const sf = prog.project.getSourceFile(path.join(root, ref.file))?.compilerNode as ts.SourceFile | undefined;
 	if (!sf) throw new SymbolNotFound(`${ref.file} is not in the program`, []);
@@ -1053,6 +1074,7 @@ export function evaluateSymbol(input: SymbolInput): SymbolReport {
 			package: packageDirOf(ws, ref.file) ? packageNameOf(ws, packageDirOf(ws, ref.file)!) : undefined,
 			packageDir: packageDirOf(ws, ref.file),
 			tsconfig: prog.tsconfig,
+			programRoot: from,
 			isTestFile: (shape?.testFiles ?? []).includes(ref.file),
 		},
 		facts: {
