@@ -20,7 +20,9 @@ compiler, and it starts no second language server.
 
 The split is there so another editor can reuse the core. Read
 [`docs/architecture.md`](docs/architecture.md) for the ports and for what an
-adapter has to write.
+adapter has to write, and
+[`docs/cursor-information.md`](docs/cursor-information.md) for every signal
+that a cursor position can reach and which of them each feature uses.
 
 ## The features
 

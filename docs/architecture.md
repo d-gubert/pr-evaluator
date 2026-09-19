@@ -103,3 +103,10 @@ test lookup. Each run therefore makes the next lookup exact.
 `packages/core/test/portability.test.ts` is the worked example: it implements
 the ports over `node:fs` and it drives all three features with no editor at
 all.
+
+## What else the host could tell us
+
+The ports above are the signals we take. `cursor-information.md` catalogs
+every signal a cursor position can reach in VS Code, what each one costs, and
+which ones are on the shelf — including the three that the editor knows and
+does not expose, each of which explains a choice made here.
