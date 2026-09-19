@@ -87,6 +87,23 @@
 					"default": true,
 					"description": "Show the cyclomatic complexity of a function when you hover over it."
 				},
+				"complexityLens.codeLens.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show the cyclomatic complexity of a function above its first line."
+				},
+				"complexityLens.codeLens.minimumGrade": {
+					"type": "string",
+					"enum": ["simple", "moderate", "complex", "critical"],
+					"enumDescriptions": [
+						"Every function.",
+						"Only a function at or above the moderate threshold.",
+						"Only a function at or above the complex threshold.",
+						"Only a function at or above the critical threshold."
+					],
+					"default": "simple",
+					"description": "The mildest grade that still earns a code lens."
+				},
 				"complexityLens.complexity.moderateThreshold": {
 					"type": "number",
 					"default": 6,

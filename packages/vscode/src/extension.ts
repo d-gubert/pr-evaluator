@@ -8,6 +8,8 @@
  */
 import * as vscode from 'vscode';
 import { isTestFile, type TypeScriptApi } from '@complexity-lens/core';
+import { AnalysisCache } from './analysis-cache.js';
+import { ComplexityCodeLensProvider } from './code-lens.js';
 import { goToCoveringTest } from './commands/go-to-covering-test.js';
 import { runMutationTesting } from './commands/run-mutation-testing.js';
 import { corePath, isSupported, SUPPORTED_LANGUAGES, workspaceRootOf } from './convert.js';
@@ -23,14 +25,19 @@ export function activate(context: vscode.ExtensionContext): void {
 	const typescript = (): TypeScriptApi => loadTypeScript(logger);
 
 	const marks = new MutationMarks();
-	const hover = new ComplexityHoverProvider(typescript, logger);
+	// One cache behind both providers: a keystroke parses the file once.
+	const cache = new AnalysisCache(typescript);
+	const hover = new ComplexityHoverProvider(cache, logger);
+	const codeLens = new ComplexityCodeLensProvider(cache, logger);
 	const commandContext = { typescript, logger, showLog };
 
 	context.subscriptions.push(
 		output,
 		marks,
-		hover,
+		cache,
+		codeLens,
 		vscode.languages.registerHoverProvider(documentSelector(), hover),
+		vscode.languages.registerCodeLensProvider(documentSelector(), codeLens),
 		vscode.commands.registerCommand('complexityLens.goToCoveringTest', () => guard(logger, showLog, () => goToCoveringTest(commandContext))),
 		vscode.commands.registerCommand('complexityLens.runMutationTesting', () => guard(logger, showLog, () => runMutationTesting({ ...commandContext, marks }))),
 		vscode.commands.registerCommand('complexityLens.showLog', showLog),

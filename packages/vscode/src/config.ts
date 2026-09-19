@@ -5,7 +5,7 @@
  * name of a setting.
  */
 import * as vscode from 'vscode';
-import { DEFAULT_REPORT_DIRECTORY, type ComplexityThresholds, type TestFramework, type TestLookupConfig } from '@complexity-lens/core';
+import { DEFAULT_REPORT_DIRECTORY, type ComplexityGrade, type ComplexityThresholds, type TestFramework, type TestLookupConfig } from '@complexity-lens/core';
 
 export interface MutationConfig {
 	testRunner: TestFramework | 'auto';
@@ -17,8 +17,15 @@ export interface MutationConfig {
 	markSurvivors: boolean;
 }
 
+export interface CodeLensConfig {
+	enabled: boolean;
+	/** The mildest grade that still earns a lens. */
+	minimumGrade: ComplexityGrade;
+}
+
 export interface ExtensionConfig {
 	hoverEnabled: boolean;
+	codeLens: CodeLensConfig;
 	thresholds: ComplexityThresholds;
 	testLookup: Partial<TestLookupConfig>;
 	mutation: MutationConfig;
@@ -30,6 +37,10 @@ export function readConfig(scope?: vscode.Uri): ExtensionConfig {
 	const concurrency = settings.get<number>('mutation.concurrency', 0);
 	return {
 		hoverEnabled: settings.get<boolean>('hover.enabled', true),
+		codeLens: {
+			enabled: settings.get<boolean>('codeLens.enabled', true),
+			minimumGrade: settings.get<ComplexityGrade>('codeLens.minimumGrade', 'simple'),
+		},
 		thresholds: {
 			moderate: settings.get<number>('complexity.moderateThreshold', 6),
 			complex: settings.get<number>('complexity.complexThreshold', 11),

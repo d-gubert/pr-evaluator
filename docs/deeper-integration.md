@@ -239,8 +239,8 @@ editor's own surfaces. All of these exist at the engine we target:
 
 | Provider | Surface it feeds |
 | --- | --- |
-| `registerDocumentSymbolProvider` | The outline and the breadcrumbs. Putting the count there is the cheapest high-value addition open to us. |
-| `registerCodeLensProvider` | A clickable line above each function. |
+| `registerCodeLensProvider` | A line above each function. **In use** for the count. Lenses from several providers simply appear together. |
+| `registerDocumentSymbolProvider` | The outline and the breadcrumbs — but **not beside another provider**. `OutlineModel` builds one group per provider and flattens the tree only when exactly one group is non-empty, so a second provider shows the outline twice, once per provider. Closed to us while the TypeScript extension answers. |
 | `registerInlayHintsProvider` | Inline, inside the line. |
 | `createDiagnosticCollection` | The Problems panel. **In use** for surviving mutants. |
 | `createTextEditorDecorationType` + `setDecorations` | Gutter icons, colour, overview-ruler marks. |
@@ -271,5 +271,6 @@ both of those states the editor's own index is stale or empty, and those are
 exactly the moments when a developer is writing the code that the hover is
 supposed to describe.
 
-Then add 4b where it pays: the count in the outline is a day of work and it
-needs nothing new.
+Then add 4b where it pays. The first of those is done: the count now rides a
+code lens. The outline was the original candidate and it turned out to be
+closed — see the row above, and D9 in `decisions.md`.

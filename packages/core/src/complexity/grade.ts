@@ -23,6 +23,17 @@ export function gradeOf(total: number, thresholds: ComplexityThresholds = DEFAUL
 	return 'simple';
 }
 
+/** The grades from the mildest to the worst. */
+export const GRADE_ORDER: readonly ComplexityGrade[] = ['simple', 'moderate', 'complex', 'critical'];
+
+/**
+ * `grade` is at least as bad as `minimum`. A view that shows only the
+ * functions worth looking at filters on this.
+ */
+export function gradeAtLeast(grade: ComplexityGrade, minimum: ComplexityGrade): boolean {
+	return GRADE_ORDER.indexOf(grade) >= GRADE_ORDER.indexOf(minimum);
+}
+
 export function gradeLabel(grade: ComplexityGrade): string {
 	switch (grade) {
 		case 'simple':

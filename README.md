@@ -2,7 +2,8 @@
 
 A VS Code extension for TypeScript with three features:
 
-1. **Cyclomatic complexity on hover.** Point at a function and read its count.
+1. **Cyclomatic complexity on hover, and above each function.** Point at a
+   function and read its count, or read it from the code lens on the line.
 2. **Go to the covering test.** One key takes you from a line of source to the
    test that runs it.
 3. **Mutation testing of one test case.** One key mutates the code that the
@@ -29,7 +30,7 @@ our own information can live.
 
 ## The features
 
-### Complexity on hover
+### Complexity on hover, and above each function
 
 The count follows a pinned definition. A function starts at 1. Add 1 for each
 `if`, `for`, `for..in`, `for..of`, `while`, `do`, `case`, `catch`, ternary,
@@ -40,6 +41,16 @@ The hover reports the *counting unit*. A nested named function is a unit of its
 own. An anonymous callback is not: its branches belong to the function that
 holds it, so the hover reports them as `inline` under that function. The count
 of a callback is therefore never lost and never counted twice.
+
+A code lens carries the same count above the first line of every counting
+unit, as plain text: `complexity 7 · complex · 2 inline`. Set
+`complexityLens.codeLens.minimumGrade` to `complex` to see it only where it
+matters, or turn it off with `complexityLens.codeLens.enabled`. The outline
+would have been the cheaper surface and it is closed to a second provider —
+see D9 in [`docs/decisions.md`](docs/decisions.md).
+
+The hover and the lens share one analysis per document version, so a keystroke
+parses the file once.
 
 ### Go to the covering test
 
@@ -93,6 +104,8 @@ supplies the test runner.
 | Setting | Default | What it does |
 | --- | --- | --- |
 | `complexityLens.hover.enabled` | `true` | Show the complexity hover. |
+| `complexityLens.codeLens.enabled` | `true` | Show the count above each function. |
+| `complexityLens.codeLens.minimumGrade` | `simple` | The mildest grade that still earns a lens. |
 | `complexityLens.complexity.moderateThreshold` | `6` | Where `simple` ends. |
 | `complexityLens.complexity.complexThreshold` | `11` | Where `complex` starts. |
 | `complexityLens.complexity.criticalThreshold` | `21` | Where `critical` starts. |

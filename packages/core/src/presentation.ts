@@ -21,6 +21,40 @@ export function complexityHover(fn: FunctionComplexity, thresholds: ComplexityTh
 	return lines.join('\n\n');
 }
 
+/**
+ * The short label of a count, for a place with one line and no Markdown: a
+ * code lens, a status bar, a gutter, a virtual-text hint.
+ *
+ * It names no function, because every surface that shows it already sits on
+ * the function.
+ */
+export function complexityLabel(fn: FunctionComplexity): string {
+	const parts = [`complexity ${fn.total}`, fn.grade];
+	if (fn.inline > 0) parts.push(`${fn.inline} inline`);
+	return parts.join(' · ');
+}
+
+/** The one sentence behind that label, as plain text. */
+export function complexityTooltip(fn: FunctionComplexity, thresholds: ComplexityThresholds = DEFAULT_THRESHOLDS): string {
+	const parts = [`${fn.own} in the body`];
+	if (fn.inline > 0) parts.push(`${fn.inline} in inline callbacks`);
+	parts.push(`${fn.lineCount} lines`);
+	return `${fn.qualifiedName}: cyclomatic complexity ${fn.total} (${fn.grade}, from ${bandOf(fn.grade, thresholds)}). ${parts.join(', ')}.`;
+}
+
+function bandOf(grade: FunctionComplexity['grade'], thresholds: ComplexityThresholds): string {
+	switch (grade) {
+		case 'simple':
+			return `under ${thresholds.moderate}`;
+		case 'moderate':
+			return `${thresholds.moderate}`;
+		case 'complex':
+			return `${thresholds.complex}`;
+		case 'critical':
+			return `${thresholds.critical}`;
+	}
+}
+
 export function describeCoveringTest(test: CoveringTest): string {
 	const where = `${basename(test.file)}:${test.range.start.line + 1}`;
 	const title = test.title ? `${test.title} — ` : '';

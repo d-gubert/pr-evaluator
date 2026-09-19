@@ -216,7 +216,7 @@ whether our own information can live inside the editor's model.
 
 | Feature | Layer 0 (parse) | Layer 2 (server) | Disk | On the shelf |
 | --- | --- | --- | --- | --- |
-| Complexity hover | the whole answer | — | — | a typed signature from `executeHoverProvider` |
+| Complexity hover and code lens | the whole answer, once per document version | — | — | a typed signature from `executeHoverProvider` |
 | Go to covering test | the enclosing unit, the test cases of the candidate files | `executeReferenceProvider` | the mutation report, then the coverage report | incoming calls instead of references; git recency to rank |
 | Mutation test one case | the test case, the suite path, the imports | — | `package.json`, then the report it writes | outgoing calls to widen the scope; diagnostics to refuse a broken file |
 
