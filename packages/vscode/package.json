@@ -1,0 +1,176 @@
+{
+	"name": "complexity-lens-vscode",
+	"displayName": "Complexity Lens",
+	"description": "Cyclomatic complexity on hover, a jump to the covering test, and mutation testing of one test case",
+	"version": "0.1.0",
+	"private": true,
+	"license": "MIT",
+	"publisher": "complexity-lens",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/d-gubert/pr-evaluator.git"
+	},
+	"engines": {
+		"vscode": "^1.85.0"
+	},
+	"categories": ["Programming Languages", "Testing", "Linters"],
+	"keywords": ["typescript", "complexity", "cyclomatic", "coverage", "mutation testing", "stryker"],
+	"main": "./dist/extension.js",
+	"activationEvents": ["onLanguage:typescript", "onLanguage:typescriptreact", "onLanguage:javascript", "onLanguage:javascriptreact"],
+	"scripts": {
+		"build": "node build.mjs",
+		"watch": "node build.mjs --watch",
+		"typecheck": "tsc -p tsconfig.json",
+		"package": "vsce package --no-dependencies"
+	},
+	"contributes": {
+		"commands": [
+			{
+				"command": "complexityLens.goToCoveringTest",
+				"title": "Go to Covering Test",
+				"category": "Complexity Lens"
+			},
+			{
+				"command": "complexityLens.runMutationTesting",
+				"title": "Run Mutation Testing on This Test",
+				"category": "Complexity Lens"
+			},
+			{
+				"command": "complexityLens.showLog",
+				"title": "Show Log",
+				"category": "Complexity Lens"
+			}
+		],
+		"menus": {
+			"editor/context": [
+				{
+					"command": "complexityLens.goToCoveringTest",
+					"when": "editorTextFocus && complexityLens.supportedFile",
+					"group": "navigation@90"
+				},
+				{
+					"command": "complexityLens.runMutationTesting",
+					"when": "editorTextFocus && complexityLens.supportedFile && complexityLens.testFile",
+					"group": "navigation@91"
+				}
+			],
+			"commandPalette": [
+				{
+					"command": "complexityLens.goToCoveringTest",
+					"when": "complexityLens.supportedFile"
+				},
+				{
+					"command": "complexityLens.runMutationTesting",
+					"when": "complexityLens.supportedFile && complexityLens.testFile"
+				}
+			]
+		},
+		"keybindings": [
+			{
+				"command": "complexityLens.goToCoveringTest",
+				"key": "ctrl+alt+t",
+				"mac": "cmd+alt+t",
+				"when": "editorTextFocus && complexityLens.supportedFile"
+			},
+			{
+				"command": "complexityLens.runMutationTesting",
+				"key": "ctrl+alt+m",
+				"mac": "cmd+alt+m",
+				"when": "editorTextFocus && complexityLens.supportedFile && complexityLens.testFile"
+			}
+		],
+		"configuration": {
+			"title": "Complexity Lens",
+			"properties": {
+				"complexityLens.hover.enabled": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show the cyclomatic complexity of a function when you hover over it."
+				},
+				"complexityLens.complexity.moderateThreshold": {
+					"type": "number",
+					"default": 6,
+					"minimum": 2,
+					"description": "The count where a function stops being simple."
+				},
+				"complexityLens.complexity.complexThreshold": {
+					"type": "number",
+					"default": 11,
+					"minimum": 3,
+					"description": "The count where a function becomes complex."
+				},
+				"complexityLens.complexity.criticalThreshold": {
+					"type": "number",
+					"default": 21,
+					"minimum": 4,
+					"description": "The count where a function becomes critical."
+				},
+				"complexityLens.testLookup.mutationReportPaths": {
+					"type": "array",
+					"items": { "type": "string" },
+					"default": ["reports/mutation/mutation.json"],
+					"description": "Mutation reports to read, relative to the workspace folder. A mutation report names the tests that cover a line exactly."
+				},
+				"complexityLens.testLookup.coveragePaths": {
+					"type": "array",
+					"items": { "type": "string" },
+					"default": ["coverage/coverage-final.json", "coverage/lcov.info"],
+					"description": "Line coverage reports to read, relative to the workspace folder. They tell you whether a line is covered at all."
+				},
+				"complexityLens.testLookup.useReferences": {
+					"type": "boolean",
+					"default": true,
+					"description": "Ask the TypeScript language server of VS Code for the callers of the function, and keep the callers that sit in a test file."
+				},
+				"complexityLens.mutation.testRunner": {
+					"type": "string",
+					"enum": ["auto", "vitest", "jest", "mocha", "node"],
+					"default": "auto",
+					"description": "The test runner that runs one test case. `auto` reads the nearest package.json."
+				},
+				"complexityLens.mutation.reportDirectory": {
+					"type": "string",
+					"default": "reports/mutation",
+					"description": "Where Stryker writes its report, relative to the workspace folder."
+				},
+				"complexityLens.mutation.commandTemplate": {
+					"type": "string",
+					"default": "",
+					"description": "The whole mutation command. Leave it empty to use the built-in Stryker command. The placeholders are ${testCommand}, ${testFile}, ${testName}, ${testNamePattern}, ${mutate}, ${reportDirectory} and ${workspaceFolder}."
+				},
+				"complexityLens.mutation.concurrency": {
+					"type": "number",
+					"default": 0,
+					"minimum": 0,
+					"description": "The number of parallel Stryker workers. 0 leaves the choice to Stryker."
+				},
+				"complexityLens.mutation.namePatternScope": {
+					"type": "string",
+					"enum": ["full", "leaf"],
+					"default": "full",
+					"description": "`full` puts the titles of the enclosing suites into the name filter. `leaf` uses the title of the test case alone."
+				},
+				"complexityLens.mutation.confirmBeforeRun": {
+					"type": "boolean",
+					"default": true,
+					"description": "Show the command line and ask before the mutation run starts."
+				},
+				"complexityLens.mutation.markSurvivors": {
+					"type": "boolean",
+					"default": true,
+					"description": "Mark every surviving mutant in the editor after the run."
+				}
+			}
+		}
+	},
+	"dependencies": {
+		"@complexity-lens/core": "workspace:*"
+	},
+	"devDependencies": {
+		"@types/node": "^22.15.0",
+		"@types/vscode": "^1.85.0",
+		"@vscode/vsce": "^3.6.0",
+		"esbuild": "^0.28.0",
+		"typescript": "^5.9.3"
+	}
+}

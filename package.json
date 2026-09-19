@@ -1,0 +1,25 @@
+{
+	"name": "complexity-lens",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Cyclomatic complexity on hover, test lookup and mutation testing for TypeScript",
+	"packageManager": "pnpm@10.33.0",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/d-gubert/pr-evaluator.git"
+	},
+	"engines": {
+		"node": ">=20"
+	},
+	"scripts": {
+		"build": "pnpm -r build",
+		"typecheck": "pnpm -r typecheck",
+		"test": "pnpm --filter @complexity-lens/core test",
+		"package": "pnpm --filter complexity-lens-vscode package"
+	},
+	"devDependencies": {
+		"@types/node": "^22.15.0",
+		"tsx": "^4.23.13",
+		"typescript": "^5.9.3"
+	}
+}

@@ -1,0 +1,17 @@
+{
+	"name": "@complexity-lens/core",
+	"version": "0.1.0",
+	"private": true,
+	"description": "Editor independent analysis: cyclomatic complexity, test lookup, mutation test plans",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"files": ["dist"],
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.test.json",
+		"test": "node --import tsx --test \"test/*.test.ts\""
+	},
+	"devDependencies": {
+		"typescript": "^5.9.3"
+	}
+}

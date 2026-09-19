@@ -1,0 +1,11 @@
+node_modules
+dist
+out
+*.vsix
+*.tsbuildinfo
+
+# The output of a mutation run and of a coverage run, at any workspace root.
+# The fixtures under packages/core/test keep their own copies on purpose.
+/reports
+/coverage
+/.stryker-tmp

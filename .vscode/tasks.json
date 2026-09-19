@@ -1,0 +1,26 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "build",
+			"type": "shell",
+			"command": "pnpm -r build",
+			"group": "build",
+			"problemMatcher": ["$tsc"]
+		},
+		{
+			"label": "watch",
+			"type": "shell",
+			"command": "pnpm --filter complexity-lens-vscode watch",
+			"isBackground": true,
+			"problemMatcher": ["$esbuild-watch"]
+		},
+		{
+			"label": "test",
+			"type": "shell",
+			"command": "pnpm test",
+			"group": "test",
+			"problemMatcher": []
+		}
+	]
+}
