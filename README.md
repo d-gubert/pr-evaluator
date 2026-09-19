@@ -20,9 +20,12 @@ compiler, and it starts no second language server.
 
 The split is there so another editor can reuse the core. Read
 [`docs/architecture.md`](docs/architecture.md) for the ports and for what an
-adapter has to write, and
+adapter has to write,
 [`docs/cursor-information.md`](docs/cursor-information.md) for every signal
-that a cursor position can reach and which of them each feature uses.
+that a cursor position can reach and which of them each feature uses, and
+[`docs/deeper-integration.md`](docs/deeper-integration.md) for the four ways
+further in: a tsserver plugin, the project index, a graph canvas, and where
+our own information can live.
 
 ## The features
 

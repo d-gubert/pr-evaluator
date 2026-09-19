@@ -19,8 +19,9 @@ compiler, and it starts no second language server.
 | `packages/vscode` | The VS Code adapter: the hover provider, the two commands, and the four ports. |
 
 The split is there so another editor can reuse the core. Read `docs/architecture.md` in the repository for the ports and for what an
-adapter has to write, and `docs/cursor-information.md` for every signal that a
-cursor position can reach.
+adapter has to write, `docs/cursor-information.md` for every signal that a
+cursor position can reach, and `docs/deeper-integration.md` for the four ways
+further in.
 
 ## The features
 

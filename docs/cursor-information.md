@@ -195,9 +195,9 @@ carries `includesTests`, and `TestRunProfile.loadDetailedCoverage` and
 `loadDetailedCoverageForTest` are callbacks that a *test provider*
 implements. The editor therefore holds the exact mapping that strategy 1 of
 our lookup wants — line to test case — and exposes it to nobody. This is why
-we read `mutation.json` off the disk instead. (Both members are present in
-the types this workspace installs. They also postdate the `1.85` engine that
-the manifest declares, so using them would mean raising it.)
+we read `mutation.json` off the disk instead. (Both members postdate the `1.85` engine that the
+manifest declares and the types that are pinned to it, so using them means
+raising both.)
 
 **"Run the test at the cursor."** `testing.runAtCursor`,
 `testing.debugAtCursor` and `testing.coverageAtCursor` do resolve the test at
@@ -205,7 +205,14 @@ the cursor, through whichever controller owns it, and they run it. They
 return nothing. So they can act for us, and they cannot inform us. Same for
 `testing.runCurrentFile` and `testing.coverageCurrentFile`.
 
-## 6. What each feature uses today
+## 6. Going further
+
+`deeper-integration.md` answers the four questions that follow from this
+catalog: whether to write a tsserver plugin, whether the project index can
+give a blast radius, what canvas the editor offers for a graph view, and
+whether our own information can live inside the editor's model.
+
+## 7. What each feature uses today
 
 | Feature | Layer 0 (parse) | Layer 2 (server) | Disk | On the shelf |
 | --- | --- | --- | --- | --- |
@@ -213,13 +220,14 @@ return nothing. So they can act for us, and they cannot inform us. Same for
 | Go to covering test | the enclosing unit, the test cases of the candidate files | `executeReferenceProvider` | the mutation report, then the coverage report | incoming calls instead of references; git recency to rank |
 | Mutation test one case | the test case, the suite path, the imports | — | `package.json`, then the report it writes | outgoing calls to widen the scope; diagnostics to refuse a broken file |
 
-## 7. Hazards
+## 8. Hazards
 
-- **The types outrun the engine.** `packages/vscode/package.json` declares
-  `engines.vscode: ^1.85.0` and `@types/vscode: ^1.85.0`. That range resolves
-  to the newest 1.x types, so `tsc` accepts an API that VS Code 1.85 does not
-  have, and the failure appears at run time in an older editor. Pin the types
-  to the engine before this matters.
+- **The types must not outrun the engine.** `@types/vscode` is not pinned by
+  semver to the API it describes: a `^1.85.0` range resolved to the newest
+  1.x types, so `tsc` accepted an API that VS Code 1.85 does not have and the
+  failure would only appear at run time in an older editor. The dependency is
+  therefore `~1.85.0`, which matches `engines.vscode`. Raise both together,
+  never one alone.
 - **A stale hover is worse than a slow one.** Every cached analysis is keyed
   on `document.version` and on the thresholds. Any new cache needs the same
   key.
