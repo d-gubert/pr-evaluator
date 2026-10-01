@@ -32,5 +32,6 @@ They must not touch `~/.claude` or the repo tree.
 3. `docs/adding-a-format.md` shows the `Format` interface, a minimal example format module,
    where to register it, and how to add a source for its session files. It points to
    `src/model.js` as the contract.
-4. No file in the repo refers to `session-trace.mjs` or `test/run.mjs`.
+4. No code, test, README, or `package.json` refers to `session-trace.mjs` or `test/run.mjs`.
+   The task files keep their references: they are the record of the work as dispatched.
 5. `npm test` passes. `node bin/session-trace.js --list` exits 0 on this machine.

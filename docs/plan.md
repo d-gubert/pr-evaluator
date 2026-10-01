@@ -2,7 +2,7 @@
 
 ## Goal
 
-Turn `session-trace.mjs` (one file) into a CLI with clear module boundaries.
+Turn the single-file script of commit 5ff6e5b into a CLI with clear module boundaries.
 The CLI reads a session log and writes the step-through HTML page.
 
 - If the user gives a session path (or ID), the CLI uses it.
@@ -62,7 +62,7 @@ Dependency rules (an import from a lower row to a higher row is not allowed):
 - Change only the files that your task lists. Do not change the fixed inputs.
   If a fixed input looks wrong, stop and report it. Do not work around it.
 - Do not commit. Do not push. The lead reviews and commits.
-- The old `session-trace.mjs` is the reference for behavior. Copy logic from it, but
+- The old single-file script (commit 5ff6e5b) is the reference for behavior. Copy logic from it, but
   do not import it.
 - Node 22 does not take a directory as a `node --test` argument. Use a glob, for example
   `node --test 'test/cli/*.test.js'`, or `node --test` with no argument to run every test.

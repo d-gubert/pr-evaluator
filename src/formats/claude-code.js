@@ -1,6 +1,6 @@
 // @ts-check
 // Format: Claude Code session transcripts (.jsonl, one JSON record per line).
-// Ported from the parse half of `buildTrace` in session-trace.mjs.
+// Ported from the parse half of the first single-file version (commit 5ff6e5b).
 
 import { basename } from 'node:path';
 

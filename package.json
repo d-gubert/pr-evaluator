@@ -4,10 +4,11 @@
   "private": true,
   "type": "module",
   "description": "Turn a Claude Code session transcript into a step-through trace page.",
-  "bin": { "session-trace": "./session-trace.mjs" },
+  "bin": { "session-trace": "./bin/session-trace.js" },
   "scripts": {
-    "trace": "node session-trace.mjs",
-    "test": "node --test test/run.mjs"
+    "test": "node --test",
+    "trace": "node bin/session-trace.js"
   },
+  "files": ["bin", "src", "README.md"],
   "engines": { "node": ">=18" }
 }
