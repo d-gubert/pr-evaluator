@@ -2,6 +2,8 @@
 
 **yast** means **Yet Another Session Tracer**. It reads a Claude Code session log (`.jsonl`). It writes one HTML page that shows the session step by step. The page uses the layout of the "Claude Code session trace" artifact, with real data instead of a simulation.
 
+<img width="1077" height="976" alt="image" src="https://github.com/user-attachments/assets/87e4cac5-2255-44b6-88de-31414cd883f4" />
+
 The tool is written in TypeScript. It has no runtime dependencies and needs Node.js 18 or later. To build it, you need `typescript` and `@types/node` (dev dependencies, installed by `npm install`).
 
 > **Warning:** The page contains the prompts, the tool inputs, and the tool results of the session. These can include secrets, file contents, and private paths. Read the page before you share it.
