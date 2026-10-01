@@ -9,7 +9,7 @@ before you start. Do not change those modules; if one has a bug, stop and report
 Files you create (and no others):
 
 - `src/cli/args.js`   `parseArgs(argv)` and `UsageError`
-- `src/cli/list.js`   `formatSessionList(sessions, {columns, now})` → string
+- `src/cli/list.js`   `formatSessionList(sessions, {columns})` → string
 - `src/cli/pick.js`   `pickSession(sessions, io)` → `Promise<SessionInfo|null>`
 - `src/cli/run.js`    `run(argv, io)` → `Promise<number>` (exit code)
 - `bin/session-trace.js`  `#!/usr/bin/env node`; builds the real `io`; sets `process.exitCode`
