@@ -1,12 +1,12 @@
-// @ts-check
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
+import { FIXTURE, GOLDEN_SESSION } from '../support/paths.js';
 import { formats, getFormat, detectFormat, parseSession, UnknownFormatError } from '../../src/formats/index.js';
 import { claudeCode } from '../../src/formats/claude-code.js';
 
-const fixtureText = readFileSync(new URL('../fixture.jsonl', import.meta.url), 'utf8');
-const golden = JSON.parse(readFileSync(new URL('../golden/fixture.session.json', import.meta.url), 'utf8'));
+const fixtureText = readFileSync(FIXTURE, 'utf8');
+const golden: unknown = JSON.parse(readFileSync(GOLDEN_SESSION, 'utf8'));
 
 test('formats lists Claude Code first', () => {
   assert.equal(formats[0], claudeCode);

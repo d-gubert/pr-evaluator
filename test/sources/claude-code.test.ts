@@ -1,4 +1,3 @@
-// @ts-check
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, writeFile, rm, utimes } from 'node:fs/promises';
@@ -7,14 +6,15 @@ import { join } from 'node:path';
 import { sources, getSource, AmbiguousSessionError } from '../../src/sources/index.js';
 import { claudeCodeSource as src } from '../../src/sources/claude-code.js';
 
-const jl = (/** @type {object[]} */ recs) => recs.map((r) => JSON.stringify(r)).join('\n') + '\n';
-const user = (/** @type {any} */ content, extra = {}) => ({ type: 'user', message: { role: 'user', content }, ...extra });
+const jl = (recs: object[]) => recs.map((r) => JSON.stringify(r)).join('\n') + '\n';
+const user = (content: unknown, extra: Record<string, unknown> = {}) => ({ type: 'user', message: { role: 'user', content }, ...extra });
 
-/** @type {string} */ let tmp;
-/** @type {string} */ let root;
-/** @type {Record<string, string>} */ let paths;
+let tmp: string;
+let root: string;
+/** The session files of the test profile, by name. */
+let paths: { old: string; mid: string; new: string };
 
-async function put(/** @type {string} */ file, /** @type {string} */ body, /** @type {number} */ mtimeSec) {
+async function put(file: string, body: string, mtimeSec: number) {
   await mkdir(join(file, '..'), { recursive: true });
   await writeFile(file, body);
   await utimes(file, mtimeSec, mtimeSec);
@@ -67,10 +67,10 @@ test('root: CLAUDE_CONFIG_DIR, else <home>/.claude', () => {
 test('list: newest first, ignores nested and non-jsonl files', async () => {
   const list = await src.list(root);
   assert.deepEqual(list.map((s) => s.path), [paths.new, paths.mid, paths.old]);
-  assert.equal(list[0].id, 'aaaa3333-0000-0000-0000-000000000003');
-  assert.equal(list[0].source, 'claude-code');
-  assert.equal(list[0].modifiedAt.getTime(), 3000 * 1000);
-  assert.ok(list[0].size > 0);
+  assert.equal(list[0]?.id, 'aaaa3333-0000-0000-0000-000000000003');
+  assert.equal(list[0]?.source, 'claude-code');
+  assert.equal(list[0]?.modifiedAt.getTime(), 3000 * 1000);
+  assert.ok((list[0]?.size ?? 0) > 0);
 });
 
 test('list: limit applies after the sort', async () => {
@@ -80,16 +80,16 @@ test('list: limit applies after the sort', async () => {
 
 test('list: project from cwd, else directory name', async () => {
   const list = await src.list(root);
-  assert.equal(list[0].project, '/work/app2');
-  assert.equal(list[1].project, '-work-lib');
-  assert.equal(list[2].project, '/work/app');
+  assert.equal(list[0]?.project, '/work/app2');
+  assert.equal(list[1]?.project, '-work-lib');
+  assert.equal(list[2]?.project, '/work/app');
 });
 
 test('list: firstPrompt skips meta, command, tool result, sidechain; bad JSON skipped', async () => {
   const list = await src.list(root);
-  assert.equal(list[0].firstPrompt, 'latest prompt');
-  assert.equal(list[1].firstPrompt, '');
-  assert.equal(list[2].firstPrompt, 'real prompt');
+  assert.equal(list[0]?.firstPrompt, 'latest prompt');
+  assert.equal(list[1]?.firstPrompt, '');
+  assert.equal(list[2]?.firstPrompt, 'real prompt');
 });
 
 test('list: missing root gives []', async () => {
@@ -129,7 +129,7 @@ test('resolve: prefix shorter than 4 characters gives null', async () => {
 test('resolve: ambiguous prefix throws with 2 candidates', async () => {
   await assert.rejects(
     () => src.resolve(root, 'aaaa'),
-    (/** @type {any} */ err) => {
+    (err: unknown) => {
       assert.ok(err instanceof AmbiguousSessionError);
       assert.equal(err.candidates.length, 2);
       assert.deepEqual([...err.candidates].sort(), [paths.old, paths.new].sort());

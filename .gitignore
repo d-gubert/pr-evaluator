@@ -1,2 +1,3 @@
 *.trace.html
 node_modules/
+dist/

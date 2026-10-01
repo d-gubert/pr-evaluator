@@ -1,5 +1,4 @@
-// @ts-check
-// End-to-end tests: run bin/session-trace.js as a child process.
+// End-to-end tests: run the compiled dist/bin/session-trace.js as a child process.
 // Each test uses a temporary profile (CLAUDE_CONFIG_DIR) and a temporary cwd.
 // Nothing touches ~/.claude or the repo tree.
 import { test, before, after, beforeEach } from 'node:test';
@@ -8,19 +7,15 @@ import { spawnSync } from 'node:child_process';
 import { mkdtemp, mkdir, copyFile, readFile, rm, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { fileURLToPath } from 'node:url';
-
-const BIN = fileURLToPath(new URL('../../bin/session-trace.js', import.meta.url));
-const FIXTURE = fileURLToPath(new URL('../fixture.jsonl', import.meta.url));
-const PKG = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8'));
+import { BIN, FIXTURE, packageVersion } from '../support/paths.js';
 
 const ID = 'cccc3333-0000-0000-0000-000000000003';
 
-/** @type {string} */ let tmp;
-/** @type {string} */ let profile;
-/** @type {string} */ let home;
-/** @type {string} */ let cwd;
-/** @type {string} */ let sessionPath;
+let tmp: string;
+let profile: string;
+let home: string;
+let cwd: string;
+let sessionPath: string;
 
 before(async () => {
   tmp = await mkdtemp(join(tmpdir(), 'session-trace-e2e-'));
@@ -38,11 +33,8 @@ beforeEach(async () => {
   cwd = await mkdtemp(join(tmp, 'cwd-'));
 });
 
-/**
- * Run the CLI with no TTY (stdin is closed, stdout and stderr are pipes).
- * @param {string[]} args
- */
-function cli(args) {
+/** Run the CLI with no TTY (stdin is closed, stdout and stderr are pipes). */
+function cli(args: string[]) {
   const r = spawnSync(process.execPath, [BIN, ...args], {
     cwd,
     encoding: 'utf8',
@@ -53,7 +45,7 @@ function cli(args) {
   return { code: r.status, stdout: r.stdout, stderr: r.stderr };
 }
 
-const exists = (/** @type {string} */ p) => access(p).then(() => true, () => false);
+const exists = (p: string) => access(p).then(() => true, () => false);
 
 test('--help exits 0 and shows the usage', () => {
   const r = cli(['--help']);
@@ -64,7 +56,7 @@ test('--help exits 0 and shows the usage', () => {
 test('--version prints the package version', () => {
   const r = cli(['--version']);
   assert.equal(r.code, 0);
-  assert.equal(r.stdout.trim(), PKG.version);
+  assert.equal(r.stdout.trim(), packageVersion());
 });
 
 test('--list lists the sessions of the profile', () => {

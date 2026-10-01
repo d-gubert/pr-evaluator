@@ -1,62 +1,52 @@
-// @ts-check
 // Claude Code sessions: <root>/projects/<project-dir>/<session-id>.jsonl
 import { open, readdir, stat } from 'node:fs/promises';
+import type { Stats } from 'node:fs';
 import { basename, join } from 'node:path';
-
-/** @typedef {import('./index.js').SessionInfo} SessionInfo */
-/** @typedef {import('./index.js').SessionSource} SessionSource */
+import type { SessionInfo, SessionSource } from './index.js';
 
 const SOURCE_ID = 'claude-code';
 const HEAD_BYTES = 64 * 1024;
 const MIN_PREFIX = 4;
 const CONCURRENCY = 16;
 
+/** A JSON object: not null, not an array. */
+type Rec = { readonly [key: string]: unknown };
+const isRec = (x: unknown): x is Rec => typeof x === 'object' && x !== null && !Array.isArray(x);
+
 export class AmbiguousSessionError extends Error {
-  /** @param {string} id @param {string[]} candidates */
-  constructor(id, candidates) {
+  readonly candidates: readonly string[];
+
+  constructor(id: string, candidates: readonly string[]) {
     super(`session id "${id}" is ambiguous: ${candidates.length} matches\n  ${candidates.join('\n  ')}`);
     this.name = 'AmbiguousSessionError';
-    /** @type {string[]} */
     this.candidates = candidates;
   }
 }
 
-/**
- * Map over items with a bounded number of concurrent calls, keeping order.
- * @template T, R
- * @param {T[]} items
- * @param {(item: T) => Promise<R>} fn
- * @returns {Promise<R[]>}
- */
-async function mapLimit(items, fn) {
-  /** @type {R[]} */
-  const out = new Array(items.length);
-  let next = 0;
-  const worker = async () => {
-    while (next < items.length) {
-      const i = next++;
-      out[i] = await fn(items[i]);
-    }
+/** Map over items with a bounded number of concurrent calls, keeping order. */
+async function mapLimit<T, R>(items: readonly T[], fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  // All workers take from one iterator, so each item is mapped once.
+  const queue = items.entries();
+  const worker = async (): Promise<void> => {
+    for (const [i, item] of queue) out[i] = await fn(item);
   };
   await Promise.all(Array.from({ length: Math.min(CONCURRENCY, items.length) }, worker));
   return out;
 }
 
-/**
- * Session files one level below <root>/projects. Missing directories give [].
- * @param {string} root
- * @returns {Promise<{ id: string, path: string, projectDir: string }[]>}
- */
-async function findFiles(root) {
+type SessionFile = { readonly id: string; readonly path: string; readonly projectDir: string };
+
+/** Session files one level below <root>/projects. Missing directories give []. */
+async function findFiles(root: string): Promise<SessionFile[]> {
   const projectsDir = join(root, 'projects');
-  /** @type {string[]} */
-  let projects;
+  let projects: string[];
   try {
     projects = await readdir(projectsDir);
   } catch {
     return [];
   }
-  const perProject = await mapLimit(projects, async (name) => {
+  const perProject = await mapLimit(projects, async (name): Promise<SessionFile[]> => {
     const dir = join(projectsDir, name);
     try {
       const entries = await readdir(dir, { withFileTypes: true });
@@ -70,28 +60,20 @@ async function findFiles(root) {
   return perProject.flat();
 }
 
-/**
- * First text of a user record's content, or "" when it is not a plain prompt.
- * @param {unknown} content
- * @returns {string}
- */
-function promptText(content) {
+/** First text of a user record's content, or "" when it is not a plain prompt. */
+function promptText(content: unknown): string {
   if (typeof content === 'string') return content;
   if (!Array.isArray(content)) return '';
-  if (content.some((b) => b && b.type === 'tool_result')) return '';
-  return content
-    .filter((b) => b && b.type === 'text' && typeof b.text === 'string')
+  const blocks: readonly unknown[] = content;
+  if (blocks.some((b) => isRec(b) && b.type === 'tool_result')) return '';
+  return blocks
+    .filter((b): b is Rec & { readonly text: string } => isRec(b) && b.type === 'text' && typeof b.text === 'string')
     .map((b) => b.text)
     .join('\n');
 }
 
-/**
- * Read at most the first 64 KiB of a file and pick out cwd and first prompt.
- * @param {string} path
- * @param {number} size
- * @returns {Promise<{ cwd: string, firstPrompt: string }>}
- */
-async function readHead(path, size) {
+/** Read at most the first 64 KiB of a file and pick out cwd and first prompt. */
+async function readHead(path: string, size: number): Promise<{ cwd: string; firstPrompt: string }> {
   let text = '';
   const fh = await open(path, 'r');
   try {
@@ -108,17 +90,16 @@ async function readHead(path, size) {
   let firstPrompt = '';
   for (const line of text.split('\n')) {
     if (!line.trim()) continue;
-    /** @type {any} */
-    let rec;
+    let rec: unknown;
     try {
       rec = JSON.parse(line);
     } catch {
       continue;
     }
-    if (!rec || typeof rec !== 'object') continue;
+    if (!isRec(rec)) continue;
     if (!cwd && typeof rec.cwd === 'string' && rec.cwd) cwd = rec.cwd;
     if (!firstPrompt && rec.type === 'user' && !rec.isMeta && !rec.isSidechain) {
-      const t = promptText(rec.message?.content).trim();
+      const t = promptText(isRec(rec.message) ? rec.message.content : undefined).trim();
       if (t && !t.startsWith('<')) firstPrompt = t;
     }
     if (cwd && firstPrompt) break;
@@ -126,8 +107,7 @@ async function readHead(path, size) {
   return { cwd, firstPrompt };
 }
 
-/** @type {SessionSource} */
-export const claudeCodeSource = {
+export const claudeCodeSource: SessionSource = {
   id: SOURCE_ID,
   name: 'Claude Code',
 
@@ -138,7 +118,7 @@ export const claudeCodeSource = {
   async list(root, opts = {}) {
     const files = await findFiles(root);
     const stats = (
-      await mapLimit(files, async (f) => {
+      await mapLimit(files, async (f): Promise<(SessionFile & { readonly st: Stats }) | null> => {
         try {
           const st = await stat(f.path);
           return st.isFile() ? { ...f, st } : null;
@@ -150,8 +130,7 @@ export const claudeCodeSource = {
     stats.sort((a, b) => b.st.mtimeMs - a.st.mtimeMs);
     const picked = opts.limit === undefined ? stats : stats.slice(0, Math.max(0, opts.limit));
 
-    return mapLimit(picked, async (f) => {
-      /** @type {{ cwd: string, firstPrompt: string }} */
+    return mapLimit(picked, async (f): Promise<SessionInfo> => {
       let head = { cwd: '', firstPrompt: '' };
       try {
         head = await readHead(f.path, f.st.size);
@@ -173,12 +152,11 @@ export const claudeCodeSource = {
   async resolve(root, id) {
     const files = await findFiles(root);
     const exact = files.filter((f) => f.id === id);
-    if (exact.length === 1) return exact[0].path;
     if (exact.length > 1) throw new AmbiguousSessionError(id, exact.map((f) => f.path));
+    if (exact[0]) return exact[0].path;
     if (id.length < MIN_PREFIX) return null;
     const hits = files.filter((f) => f.id.startsWith(id));
-    if (hits.length === 1) return hits[0].path;
     if (hits.length > 1) throw new AmbiguousSessionError(id, hits.map((f) => f.path));
-    return null;
+    return hits[0]?.path ?? null;
   },
 };

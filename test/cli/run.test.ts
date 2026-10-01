@@ -1,23 +1,24 @@
-// @ts-check
 import { test, before, after, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, mkdir, copyFile, readFile, readdir, rm, utimes, writeFile, access } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
-import { run } from '../../src/cli/run.js';
+import { run, type ExitCode } from '../../src/cli/run.js';
+import { FIXTURE, GOLDEN_STEPS, packageVersion } from '../support/paths.js';
+import { pageData } from '../support/page.js';
 
-const FIXTURE = new URL('../fixture.jsonl', import.meta.url);
-const GOLDEN = JSON.parse(await readFile(new URL('../golden/fixture.steps.json', import.meta.url), 'utf8'));
+const GOLDEN: unknown = JSON.parse(await readFile(GOLDEN_STEPS, 'utf8'));
+const GOLDEN_COUNT = Array.isArray(GOLDEN) ? GOLDEN.length : NaN;
 
 const ID_A = 'aaaa1111-0000-0000-0000-000000000001';
 const ID_B = 'bbbb2222-0000-0000-0000-000000000002';
 
-/** @type {string} */ let tmp;
-/** @type {string} */ let profile;
-/** @type {string} */ let cwd;
-/** @type {string} */ let pathA;
-/** @type {string} */ let pathB;
+let tmp: string;
+let profile: string;
+let cwd: string;
+let pathA: string;
+let pathB: string;
 
 before(async () => {
   tmp = await mkdtemp(join(tmpdir(), 'pr-evaluator-cli-'));
@@ -38,11 +39,10 @@ beforeEach(async () => {
   cwd = await mkdtemp(join(tmp, 'cwd-'));
 });
 
-/**
- * @param {string[]} argv
- * @param {{input?: string, interactive?: boolean, config?: string, columns?: number}} [opts]
- */
-async function go(argv, opts = {}) {
+async function go(
+  argv: string[],
+  opts: { input?: string; interactive?: boolean; config?: string; columns?: number } = {},
+): Promise<{ code: ExitCode; out: string; err: string }> {
   let out = '';
   let err = '';
   const stdin = new PassThrough();
@@ -52,22 +52,15 @@ async function go(argv, opts = {}) {
     home: join(tmp, 'no-home'),
     cwd,
     stdin,
-    stdout: { write: (/** @type {string} */ s) => void (out += s) },
-    stderr: { write: (/** @type {string} */ s) => void (err += s) },
+    stdout: { write: (s: string) => void (out += s) },
+    stderr: { write: (s: string) => void (err += s) },
     interactive: opts.interactive ?? false,
     columns: opts.columns,
   });
   return { code, out, err };
 }
 
-/** @param {string} html */
-function dataOf(html) {
-  const m = html.match(/<script type="application\/json" id="data">([\s\S]*?)<\/script>/);
-  assert.ok(m, 'data block exists');
-  return JSON.parse(m[1]);
-}
-
-const exists = (/** @type {string} */ p) => access(p).then(() => true, () => false);
+const exists = (p: string) => access(p).then(() => true, () => false);
 
 // ------------------------------------------------------------ rule 1: a session is given
 
@@ -76,7 +69,7 @@ test('a path: writes <name>.trace.html in the cwd and prints the summary', async
   assert.equal(code, 0);
   assert.equal(out, '');
   const target = join(cwd, `${ID_A}.trace.html`);
-  assert.equal(err, `${pathA}\n→ ${target}  (${GOLDEN.length} steps, 6 loop turns)\n`);
+  assert.equal(err, `${pathA}\n→ ${target}  (${GOLDEN_COUNT} steps, 6 loop turns)\n`);
   assert.ok(await exists(target));
 });
 
@@ -131,8 +124,8 @@ test('--list prints the sessions to stdout, newest first, and exits 0', async ()
   assert.equal(err, '');
   const lines = out.trimEnd().split('\n');
   assert.equal(lines.length, 2);
-  assert.match(lines[0], /^1 {2}\d{4}-\d\d-\d\d \d\d:\d\d {2}\/work\/app {2}write tests in the packages\/apps directory$/);
-  assert.match(lines[1], /^2 /);
+  assert.match(lines[0] ?? '', /^1 {2}\d{4}-\d\d-\d\d \d\d:\d\d {2}\/work\/app {2}write tests in the packages\/apps directory$/);
+  assert.match(lines[1] ?? '', /^2 /);
   assert.deepEqual(await readdir(cwd), []);
 });
 
@@ -213,7 +206,7 @@ test('an empty profile gives exit 1', async () => {
 test('-o writes to the file, relative to the cwd', async () => {
   const { code, err } = await go([pathA, '-o', 'x.html']);
   assert.equal(code, 0);
-  assert.equal(err, `${pathA}\n→ ${join(cwd, 'x.html')}  (${GOLDEN.length} steps, 6 loop turns)\n`);
+  assert.equal(err, `${pathA}\n→ ${join(cwd, 'x.html')}  (${GOLDEN_COUNT} steps, 6 loop turns)\n`);
   assert.ok(await exists(join(cwd, 'x.html')));
   assert.ok(!(await exists(join(cwd, `${ID_A}.trace.html`))));
 });
@@ -248,19 +241,19 @@ test('an unknown option is a usage error', async () => {
 
 test('the page holds the steps of the golden file', async () => {
   const { out } = await go([pathA, '--stdout']);
-  const data = dataOf(out);
+  const data = pageData(out);
   assert.deepEqual(data.steps, GOLDEN);
   assert.equal(data.meta.turns, 6);
   assert.equal(data.meta.file, `${ID_A}.jsonl`);
   const written = await go([pathA]);
   assert.equal(written.code, 0);
-  assert.deepEqual(dataOf(await readFile(join(cwd, `${ID_A}.trace.html`), 'utf8')).steps, GOLDEN);
+  assert.deepEqual(pageData(await readFile(join(cwd, `${ID_A}.trace.html`), 'utf8')).steps, GOLDEN);
 });
 
 test('--format claude-code works', async () => {
   const { code, out } = await go([pathA, '--format', 'claude-code', '--stdout']);
   assert.equal(code, 0);
-  assert.deepEqual(dataOf(out).steps, GOLDEN);
+  assert.deepEqual(pageData(out).steps, GOLDEN);
 });
 
 test('--format nope is a usage error', async () => {
@@ -290,8 +283,7 @@ test('--help prints the usage to stdout and exits 0', async () => {
 });
 
 test('--version prints the version of package.json', async () => {
-  const pkg = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8'));
   const { code, out } = await go(['-v']);
   assert.equal(code, 0);
-  assert.equal(out, pkg.version + '\n');
+  assert.equal(out, packageVersion() + '\n');
 });

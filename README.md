@@ -2,16 +2,17 @@
 
 `session-trace` reads a Claude Code session log (`.jsonl`). It writes one HTML page that shows the session step by step. The page uses the layout of the "Claude Code session trace" artifact, with real data instead of a simulation.
 
-The tool has no dependencies. It needs Node.js 18 or later.
+The tool is written in TypeScript. It has no runtime dependencies and needs Node.js 18 or later. To build it, you need `typescript` and `@types/node` (dev dependencies, installed by `npm install`).
 
 > **Warning:** The page contains the prompts, the tool inputs, and the tool results of the session. These can include secrets, file contents, and private paths. Read the page before you share it.
 
 ## Install
 
-Run the tool from the repository:
+Build the tool, then run it from the repository:
 
 ```sh
-node bin/session-trace.js --help
+npm install      # installs the dev dependencies, and builds to dist/ (the "prepare" script)
+node dist/bin/session-trace.js --help
 ```
 
 Or link it, to get the `session-trace` command:
@@ -20,6 +21,8 @@ Or link it, to get the `session-trace` command:
 npm link
 session-trace --help
 ```
+
+`npm run build` compiles `bin/`, `src/`, and `test/` to `dist/` with `tsc`, and copies `src/render/page.html` to `dist/src/render/`. Build again after you change a source file. `dist/` is not in git.
 
 ## Usage
 
@@ -135,20 +138,33 @@ The context meter shows `input_tokens + cache_read_input_tokens + cache_creation
 ## Module layout
 
 ```
-bin/session-trace.js   entry: builds the real I/O and calls run()
+bin/session-trace.ts   entry: builds the real I/O and calls run()
 src/cli/               args, run, session picker, session list table
 src/sources/           find session files on disk
 src/formats/           parse one log file into a Session
-src/model.js           the Session model (the contract; types only)
+src/model.ts           the Session model (the contract: types, and the makers of the branded types)
 src/view/              Session -> View (the steps)
-src/render/            View -> HTML
-test/                  node:test tests, golden files, and the fixture
+src/render/            View -> HTML (page.html is the page template; the build copies it)
+test/                  node:test tests (TypeScript), type tests, golden files, and the fixture
+scripts/dist.mjs       build helper: clean dist/, copy page.html
 docs/                  the plan, the task files, and the format guide
+dist/                  the build output (not in git); `bin` of package.json points here
 ```
 
 Data flow: `source -> path -> format.parse -> Session -> toView -> renderHtml -> file`.
 
-Only `src/cli/` joins the other modules. A format knows only the model. The view knows only the model. The renderer gets a View.
+Only `src/cli/run.ts` joins the other modules. A format knows only the model. The view knows only the model. The renderer gets a View. `test/layers.test.ts` checks these rules on the imports.
+
+### The types
+
+The rules of the data are in the types of `src/model.ts`. The compiler rejects data that breaks them, and `test/types/invariants.test.ts` shows each rejection with `// @ts-expect-error`. The model data is `readonly`. The JSON of a log is `unknown` until a check narrows it.
+
+- `Session.events` is a tuple type: `session_start` first, `session_end` last, neither anywhere else, and at most one `context` event, directly after `session_start`.
+- `SessionEvent` is a union on `type`. `ToolCall` has `result: null` exactly when `status` is `'no result'`.
+- `SessionId`, `ToolUseId`, and `PositiveCount` are branded types. A timestamp is an ISO string, or `''` when unknown.
+- `Step.k` has at least one tag. The CLI arguments are one of four modes (`help`, `version`, `list`, `trace`). `-o` with `--stdout` has no representation. Exit codes are `0 | 1 | 2 | 130`. The format registry and the source registry are non-empty readonly tuples.
+
+What a type cannot say is checked at run time: that a `tool_use` block has its call, and that `api_error.count` is 1 or more. See `test/model/invariants.test.ts`.
 
 To support the logs of another harness, add a format module. See [docs/adding-a-format.md](docs/adding-a-format.md).
 
@@ -162,13 +178,15 @@ To support the logs of another harness, add a format module. See [docs/adding-a-
 ## Test
 
 ```sh
-npm test
+npm run typecheck   # tsc --noEmit: the type rules, and the type tests of the invariants
+npm test            # builds, then runs the compiled tests: node --test 'dist/test/**/*.test.js'
 ```
 
-`npm test` runs `node --test`. Node 22 does not accept a directory as an argument. To run some tests, use a glob:
+Node 22 does not accept a directory as an argument of `node --test`, so `npm test` uses a glob. The tests are TypeScript and run from `dist/test/`. To run some tests, build first, then use a glob:
 
 ```sh
-node --test 'test/e2e/*.test.js'
+npm run build
+node --test 'dist/test/e2e/*.test.js'
 ```
 
-The tests use `test/fixture.jsonl`. The fixture has hooks, a rejected tool call, a PreToolUse block, API errors, a subagent, a compaction, a blocking Stop hook, a slash command, and an interruption. The end-to-end tests run the CLI as a child process. They use a temporary profile and a temporary directory.
+The tests use `test/fixture.jsonl` and the golden files in `test/golden/`. The fixture has hooks, a rejected tool call, a PreToolUse block, API errors, a subagent, a compaction, a blocking Stop hook, a slash command, and an interruption. The end-to-end tests run the compiled CLI (`dist/bin/session-trace.js`) as a child process. They use a temporary profile and a temporary directory.

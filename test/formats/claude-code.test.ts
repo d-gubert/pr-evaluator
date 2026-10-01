@@ -1,17 +1,17 @@
-// @ts-check
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { claudeCode } from '../../src/formats/claude-code.js';
+import { FIXTURE, GOLDEN_SESSION } from '../support/paths.js';
 
-const fixtureText = readFileSync(new URL('../fixture.jsonl', import.meta.url), 'utf8');
-const golden = JSON.parse(readFileSync(new URL('../golden/fixture.session.json', import.meta.url), 'utf8'));
+const fixtureText = readFileSync(FIXTURE, 'utf8');
+const golden: unknown = JSON.parse(readFileSync(GOLDEN_SESSION, 'utf8'));
 
 const base = { sessionId: 's-1', cwd: '/w', version: '1', entrypoint: 'cli', isSidechain: false };
-const rec = (o, ts = '2026-01-01T00:00:00.000Z') => JSON.stringify({ ...base, timestamp: ts, ...o });
-const parse = lines => claudeCode.parse(lines.join('\n') + '\n', { file: 'x.jsonl' });
+const rec = (o: Record<string, unknown>, ts = '2026-01-01T00:00:00.000Z') => JSON.stringify({ ...base, timestamp: ts, ...o });
+const parse = (lines: string[]) => claudeCode.parse(lines.join('\n') + '\n', { file: 'x.jsonl' });
 
 test('the fixture parses to the golden Session', () => {
   const session = claudeCode.parse(fixtureText, { file: 'fixture.jsonl' });
@@ -20,7 +20,7 @@ test('the fixture parses to the golden Session', () => {
 
 test('the fixture ends in a partial line and the parser ignores it', () => {
   const last = fixtureText.trimEnd().split('\n').pop();
-  assert.throws(() => JSON.parse(/** @type {string} */ (last)));
+  assert.throws(() => JSON.parse(last ?? ''));
   const withPartial = claudeCode.parse(fixtureText, { file: 'fixture.jsonl' });
   const without = claudeCode.parse(fixtureText.trimEnd().split('\n').slice(0, -1).join('\n'), { file: 'fixture.jsonl' });
   assert.deepEqual(withPartial, without);
@@ -85,18 +85,18 @@ test('the parser keeps full texts and tolerates odd records', () => {
     rec({ type: 'attachment', attachment: { type: 'hook_success', hookEvent: 'PostToolUse', hookName: 'PostToolUse:Read', toolUseID: 't', content: long } }),
   ]);
   const prompt = s.events[1];
-  assert.equal(prompt.type === 'prompt' && prompt.text, long.trim());
+  assert.equal(prompt?.type === 'prompt' && prompt.text, long.trim());
   const req = s.events[2];
-  assert.equal(req.type, 'request');
-  if (req.type !== 'request') return;
+  assert.equal(req?.type, 'request');
+  if (req?.type !== 'request') return;
   assert.deepEqual(req.blocks, [{ type: 'tool_use', toolId: 't' }]);
   assert.equal(req.usage, null);
-  assert.equal(req.tools[0].result?.text, long + '\n[image]');
-  assert.equal(req.tools[0].post[0].detail, long);
+  assert.equal(req.tools[0]?.result?.text, long + '\n[image]');
+  assert.equal(req.tools[0]?.post[0]?.detail, long);
 });
 
 test('tool status comes from the result', () => {
-  const call = (id, content, is_error) => [
+  const call = (id: string, content: string | undefined, is_error?: boolean) => [
     rec({ type: 'assistant', message: { id: 'm' + id, model: 'm', content: [{ type: 'tool_use', id, name: 'T', input: {} }] } }),
     ...(content === undefined ? [] : [rec({ type: 'user', message: { content: [{ type: 'tool_result', tool_use_id: id, content, is_error }] } })]),
   ];
@@ -139,7 +139,7 @@ test('smoke: every real log under ~/.claude/projects/*/ parses', { skip: !exists
       const path = join(smokeRoot, d.name, f);
       const s = claudeCode.parse(readFileSync(path, 'utf8'), { file: f });
       assert.equal(s.events[0].type, 'session_start', path);
-      assert.equal(s.events[s.events.length - 1].type, 'session_end', path);
+      assert.equal(s.events[s.events.length - 1]?.type, 'session_end', path);
     }
   }
 });

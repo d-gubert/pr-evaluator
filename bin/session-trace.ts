@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-// @ts-check
 import { homedir } from 'node:os';
 import { run } from '../src/cli/run.js';
 

@@ -4,11 +4,26 @@
   "private": true,
   "type": "module",
   "description": "Turn a Claude Code session transcript into a step-through trace page.",
-  "bin": { "session-trace": "./bin/session-trace.js" },
-  "scripts": {
-    "test": "node --test",
-    "trace": "node bin/session-trace.js"
+  "bin": {
+    "session-trace": "./dist/bin/session-trace.js"
   },
-  "files": ["bin", "src", "README.md"],
-  "engines": { "node": ">=18" }
+  "scripts": {
+    "build": "node scripts/dist.mjs clean && tsc && node scripts/dist.mjs assets",
+    "typecheck": "tsc --noEmit",
+    "prepare": "npm run build",
+    "test": "npm run build && node --test 'dist/test/**/*.test.js'",
+    "trace": "node dist/bin/session-trace.js"
+  },
+  "files": [
+    "dist",
+    "!dist/test",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.4",
+    "typescript": "^7.0.2"
+  }
 }

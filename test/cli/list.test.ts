@@ -1,10 +1,9 @@
-// @ts-check
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { formatSessionList } from '../../src/cli/list.js';
+import type { SessionInfo } from '../../src/sources/index.js';
 
-/** @returns {import('../../src/sources/index.js').SessionInfo} */
-const info = (/** @type {Partial<import('../../src/sources/index.js').SessionInfo>} */ over) => ({
+const info = (over: Partial<SessionInfo>): SessionInfo => ({
   id: 'x', path: '/p/x.jsonl', source: 'claude-code', project: '/work/app',
   modifiedAt: new Date(2026, 0, 2, 3, 4), size: 1, firstPrompt: 'hello', ...over,
 });
@@ -22,8 +21,8 @@ test('the index is padded to the widest index', () => {
   const sessions = Array.from({ length: 10 }, () => info({}));
   const lines = formatSessionList(sessions, { columns: 80 }).trimEnd().split('\n');
   assert.equal(lines.length, 10);
-  assert.match(lines[0], /^ 1  2026/);
-  assert.match(lines[9], /^10  2026/);
+  assert.match(lines[0] ?? '', /^ 1  2026/);
+  assert.match(lines[9] ?? '', /^10  2026/);
 });
 
 test('the prompt is one line', () => {
@@ -55,6 +54,6 @@ test('the default width is 100', () => {
 
 test('the prompt column lines up when the projects differ', () => {
   const out = formatSessionList([info({ project: '/a', firstPrompt: 'one' }), info({ project: '/much/longer', firstPrompt: 'two' })], { columns: 80 });
-  const [a, b] = out.trimEnd().split('\n');
+  const [a = '', b = ''] = out.trimEnd().split('\n');
   assert.equal(a.indexOf('one'), b.indexOf('two'));
 });
