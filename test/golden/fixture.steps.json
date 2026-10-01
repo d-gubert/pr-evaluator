@@ -1,0 +1,207 @@
+[
+  {
+    "t": "Session starts",
+    "k": [
+      "hook",
+      "loop"
+    ],
+    "d": "Claude Code 2.1.200 starts in /work/app. The SessionStart hook runs one time. Its stdout can add context to the session.",
+    "c": "session: fixture-0000-0000-0000-000000000000\ncwd:     /work/app\nbranch:  main\nversion: 2.1.200   entry: cli\nmodel:   claude-sonnet-5-5\nhook: SessionStart:startup → ok\n  $ .claude/hooks/session-start.sh\n  \"branch: main\"",
+    "turn": 0,
+    "ctx": 0,
+    "ts": "2026-01-01T10:00:03.000Z"
+  },
+  {
+    "t": "Build the context",
+    "k": [
+      "loop"
+    ],
+    "d": "Claude Code builds the system prompt and the tool definitions. It adds the skills, the agents, and the MCP servers. The transcript records the parts below.",
+    "c": "nested_memory: /work/app/CLAUDE.md",
+    "turn": 0,
+    "ctx": 0,
+    "ts": "2026-01-01T10:00:03.000Z"
+  },
+  {
+    "t": "User sends the prompt",
+    "k": [
+      "ui",
+      "hook"
+    ],
+    "d": "You type the request. The UserPromptSubmit hook runs one time. The hook can block the prompt or add context to it. The agent loop starts.",
+    "c": "> write tests in the packages/apps directory\n\nhook: UserPromptSubmit → ok",
+    "turn": 0,
+    "ctx": 0,
+    "ts": "2026-01-01T10:00:09.000Z"
+  },
+  {
+    "t": "Turn 1: Glob",
+    "k": [
+      "http",
+      "tool",
+      "hook"
+    ],
+    "d": "The agent loop sends request 1 to the Messages API with 14k tokens of context. The model thinks first. The model asks for one tool: Glob. The PreToolUse and PostToolUse hooks run 2 times. The results go into messages[] as tool_result blocks.",
+    "c": "POST /v1/messages   model: claude-sonnet-5-5\n  context: 14,000 tokens (cache read 12,995 · cache write 1,000 · new 5)\n← thinking: \"Look at the layout first.\"\n← tool_use: Glob  \"packages/apps/**/*.ts\"\n← stop_reason: \"tool_use\"   output: 100 tokens\n\nhook: PreToolUse:Glob → ok\n  $ check.sh\ntool: Glob ✓\n  → packages/apps/web/src/utils/date.ts\n  → packages/apps/web/src/api/client.ts\nhook: PostToolUse:Glob → ok\nmessages += tool_result ×1",
+    "turn": 1,
+    "ctx": 14000,
+    "ts": "2026-01-01T10:00:15.000Z"
+  },
+  {
+    "t": "Turn 2: TodoWrite, Write",
+    "k": [
+      "http",
+      "tool",
+      "hook",
+      "ui"
+    ],
+    "d": "The agent loop sends request 2 to the Messages API with 20k tokens of context. The model asks for 2 tools in one response. You reject 1 tool call. The results go into messages[] as tool_result blocks.",
+    "c": "POST /v1/messages   model: claude-sonnet-5-5\n  context: 20,000 tokens (cache read 18,995 · cache write 1,000 · new 5)\n← tool_use: TodoWrite\n  [~] tests for date.ts\n  [ ] run the suite\n← tool_use: Write  \"date.test.ts\"\n← stop_reason: \"tool_use\"   output: 100 tokens\n\ntool: TodoWrite ✓\n  → Todos updated\ntool: Write ✗ rejected by you\n  → The user doesn't want to proceed with this tool use. The tool use was rejected.\nmessages += tool_result ×2\n\nhook: Notification → ok\n  \"Claude needs your permission to use Write\"",
+    "turn": 2,
+    "ctx": 20000,
+    "ts": "2026-01-01T10:00:33.000Z"
+  },
+  {
+    "t": "Turn 3: Bash",
+    "k": [
+      "http",
+      "tool",
+      "hook"
+    ],
+    "d": "The agent loop sends request 3 to the Messages API with 26k tokens of context. The model asks for one tool: Bash. The PreToolUse and PostToolUse hooks run one time. A PreToolUse hook blocks 1 tool call. 1 tool call returns an error. The results go into messages[] as tool_result blocks.",
+    "c": "POST /v1/messages   model: claude-sonnet-5-5\n  context: 26,000 tokens (cache read 24,995 · cache write 1,000 · new 5)\n← tool_use: Bash  \"pnpm vitest run\"\n← stop_reason: \"tool_use\"   output: 100 tokens\n\nhook: PreToolUse:Bash → block\n  \"rm is not allowed\"\ntool: Bash ✗ error\n  → Error: 1 failed\nmessages += tool_result ×1",
+    "turn": 3,
+    "ctx": 26000,
+    "ts": "2026-01-01T10:00:48.000Z"
+  },
+  {
+    "t": "API error ×2",
+    "k": [
+      "http"
+    ],
+    "d": "The Messages API returns an error. Claude Code waits and sends the request again.",
+    "c": "POST /v1/messages\n← error: overloaded_error\nretries: 2",
+    "turn": 3,
+    "ctx": 26000,
+    "ts": "2026-01-01T10:00:57.000Z"
+  },
+  {
+    "t": "Turn 4: Agent",
+    "k": [
+      "http",
+      "tool"
+    ],
+    "d": "The agent loop sends request 4 to the Messages API with 30k tokens of context. The model asks for one tool: Agent. The results go into messages[] as tool_result blocks.",
+    "c": "POST /v1/messages   model: claude-sonnet-5-5\n  context: 30,000 tokens (cache read 28,995 · cache write 1,000 · new 5)\n← tool_use: Agent  \"Find test helpers\"\n← stop_reason: \"tool_use\"   output: 100 tokens\n\ntool: Agent ✓\n  → Helpers live in test/utils.ts\n  subagent: 7 tool calls · 41,234 tokens · 38 s\nmessages += tool_result ×1",
+    "turn": 4,
+    "ctx": 30000,
+    "ts": "2026-01-01T10:01:03.000Z"
+  },
+  {
+    "t": "Auto-compact",
+    "k": [
+      "loop",
+      "http",
+      "hook"
+    ],
+    "d": "The context comes close to the limit, so Claude Code compacts it. The PreCompact hook runs first. One extra API request writes a summary. The summary replaces the old messages.",
+    "c": "hook: PreCompact:auto → ok\n  $ log.sh\ntrigger: \"auto\"   before: 167,000 tokens\nPOST /v1/messages  → summary of the conversation\nmessages = [summary, recent turns]\n\nsummary:\n  This session is being continued.\n  The user asked for tests.",
+    "turn": 4,
+    "ctx": 42000,
+    "ts": "2026-01-01T10:01:15.000Z"
+  },
+  {
+    "t": "Turn 5: end_turn",
+    "k": [
+      "http",
+      "loop"
+    ],
+    "d": "The agent loop sends request 5 to the Messages API with 42k tokens of context. The model returns text with no tool_use. The agent loop exits.",
+    "c": "POST /v1/messages   model: claude-sonnet-5-5\n  context: 42,000 tokens (cache read 40,995 · cache write 1,000 · new 5)\n← text: \"I added 2 test files with 14 tests.\"\n← stop_reason: \"end_turn\"   output: 100 tokens",
+    "turn": 5,
+    "ctx": 42000,
+    "ts": "2026-01-01T10:01:21.000Z"
+  },
+  {
+    "t": "Stop hook",
+    "k": [
+      "hook",
+      "loop"
+    ],
+    "d": "The Stop hook runs when the loop exits. The hook returns a block decision. The loop continues with the reason as input.",
+    "c": "hook: Stop → block\n  \"lint errors in date.test.ts\"\n→ loop continues (turn 6) …",
+    "turn": 5,
+    "ctx": 42000,
+    "ts": ""
+  },
+  {
+    "t": "Turn 6: end_turn",
+    "k": [
+      "http",
+      "loop"
+    ],
+    "d": "The agent loop sends request 6 to the Messages API with 44k tokens of context. The model returns text with no tool_use. The agent loop exits.",
+    "c": "POST /v1/messages   model: claude-sonnet-5-5\n  context: 44,000 tokens (cache read 42,995 · cache write 1,000 · new 5)\n← text: \"I fixed the lint errors.\"\n← stop_reason: \"end_turn\"   output: 100 tokens",
+    "turn": 6,
+    "ctx": 44000,
+    "ts": "2026-01-01T10:01:30.000Z"
+  },
+  {
+    "t": "Stop hook",
+    "k": [
+      "hook",
+      "loop"
+    ],
+    "d": "The Stop hook runs when the loop exits. The hook lets the loop exit.",
+    "c": "hook: Stop\n  $ pnpm lint",
+    "turn": 6,
+    "ctx": 44000,
+    "ts": "2026-01-01T10:01:33.000Z"
+  },
+  {
+    "t": "Slash command /cost",
+    "k": [
+      "ui"
+    ],
+    "d": "You run the command /cost. Claude Code handles it in the CLI.",
+    "c": "> /cost\n→ Total cost: $0.42",
+    "turn": 6,
+    "ctx": 44000,
+    "ts": "2026-01-01T10:01:36.000Z"
+  },
+  {
+    "t": "You interrupt the turn",
+    "k": [
+      "ui",
+      "loop"
+    ],
+    "d": "You stop the agent loop. Claude Code waits for your next prompt.",
+    "c": "[Request interrupted by user]",
+    "turn": 6,
+    "ctx": 44000,
+    "ts": "2026-01-01T10:01:42.000Z"
+  },
+  {
+    "t": "Claude Code adds a message",
+    "k": [
+      "loop"
+    ],
+    "d": "Claude Code writes this assistant message itself. No API request occurs.",
+    "c": "No response requested.",
+    "turn": 6,
+    "ctx": 44000,
+    "ts": "2026-01-01T10:01:45.000Z"
+  },
+  {
+    "t": "Session ends",
+    "k": [
+      "ui",
+      "hook"
+    ],
+    "d": "The transcript ends. The session lasts 1 min 45 s. It has 6 API requests, 5 tool calls, and 9 recorded hook runs. The SessionEnd hook runs for cleanup or logs.",
+    "c": "requests:   6\ntool calls: 5  (Glob, TodoWrite, Write, Bash, Agent)\nhook runs:  9\ntokens:     output 600 · cache read 169,970 · cache write 6,000 · new 30\nlast context: 44,000 tokens\nhook: SessionEnd → ok",
+    "turn": 6,
+    "ctx": 44000,
+    "ts": "2026-01-01T10:01:48.000Z"
+  }
+]

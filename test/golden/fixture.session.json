@@ -1,0 +1,399 @@
+{
+  "meta": {
+    "harness": "claude-code",
+    "harnessName": "Claude Code",
+    "file": "fixture.jsonl",
+    "sessionId": "fixture-0000-0000-0000-000000000000",
+    "cwd": "/work/app",
+    "gitBranch": "main",
+    "version": "2.1.200",
+    "entrypoint": "cli",
+    "models": [
+      "claude-sonnet-5-5"
+    ],
+    "firstPrompt": "write tests in the packages/apps directory",
+    "startedAt": "2026-01-01T10:00:03.000Z",
+    "endedAt": "2026-01-01T10:01:48.000Z",
+    "contextWindow": null
+  },
+  "events": [
+    {
+      "type": "session_start",
+      "ts": "2026-01-01T10:00:03.000Z",
+      "hooks": [
+        {
+          "event": "SessionStart",
+          "name": "SessionStart:startup",
+          "outcome": "ok",
+          "detail": "branch: main",
+          "command": ".claude/hooks/session-start.sh"
+        }
+      ]
+    },
+    {
+      "type": "context",
+      "ts": "2026-01-01T10:00:03.000Z",
+      "items": [
+        "nested_memory: /work/app/CLAUDE.md"
+      ]
+    },
+    {
+      "type": "prompt",
+      "ts": "2026-01-01T10:00:09.000Z",
+      "text": "write tests in the packages/apps directory",
+      "hooks": [
+        {
+          "event": "UserPromptSubmit",
+          "name": "UserPromptSubmit",
+          "outcome": "ok",
+          "detail": "",
+          "command": ""
+        }
+      ]
+    },
+    {
+      "type": "request",
+      "ts": "2026-01-01T10:00:15.000Z",
+      "model": "claude-sonnet-5-5",
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 5,
+        "cacheRead": 12995,
+        "cacheWrite": 1000,
+        "output": 100,
+        "thinking": null
+      },
+      "blocks": [
+        {
+          "type": "thinking",
+          "text": "Look at the layout first."
+        },
+        {
+          "type": "tool_use",
+          "toolId": "t1"
+        }
+      ],
+      "tools": [
+        {
+          "id": "t1",
+          "name": "Glob",
+          "input": {
+            "pattern": "packages/apps/**/*.ts"
+          },
+          "pre": [
+            {
+              "event": "PreToolUse",
+              "name": "PreToolUse:Glob",
+              "outcome": "ok",
+              "detail": "",
+              "command": "check.sh"
+            }
+          ],
+          "post": [
+            {
+              "event": "PostToolUse",
+              "name": "PostToolUse:Glob",
+              "outcome": "ok",
+              "detail": "",
+              "command": ""
+            }
+          ],
+          "result": {
+            "text": "packages/apps/web/src/utils/date.ts\npackages/apps/web/src/api/client.ts",
+            "isError": false
+          },
+          "status": "ok",
+          "subagent": null
+        }
+      ],
+      "hooks": []
+    },
+    {
+      "type": "request",
+      "ts": "2026-01-01T10:00:33.000Z",
+      "model": "claude-sonnet-5-5",
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 5,
+        "cacheRead": 18995,
+        "cacheWrite": 1000,
+        "output": 100,
+        "thinking": null
+      },
+      "blocks": [
+        {
+          "type": "tool_use",
+          "toolId": "t2"
+        },
+        {
+          "type": "tool_use",
+          "toolId": "t3"
+        }
+      ],
+      "tools": [
+        {
+          "id": "t2",
+          "name": "TodoWrite",
+          "input": {
+            "todos": [
+              {
+                "content": "tests for date.ts",
+                "status": "in_progress"
+              },
+              {
+                "content": "run the suite",
+                "status": "pending"
+              }
+            ]
+          },
+          "pre": [],
+          "post": [],
+          "result": {
+            "text": "Todos updated",
+            "isError": false
+          },
+          "status": "ok",
+          "subagent": null
+        },
+        {
+          "id": "t3",
+          "name": "Write",
+          "input": {
+            "file_path": "date.test.ts",
+            "content": "x"
+          },
+          "pre": [],
+          "post": [],
+          "result": {
+            "text": "The user doesn't want to proceed with this tool use. The tool use was rejected.",
+            "isError": true
+          },
+          "status": "rejected",
+          "subagent": null
+        }
+      ],
+      "hooks": [
+        {
+          "event": "Notification",
+          "name": "Notification",
+          "outcome": "ok",
+          "detail": "Claude needs your permission to use Write",
+          "command": ""
+        }
+      ]
+    },
+    {
+      "type": "request",
+      "ts": "2026-01-01T10:00:48.000Z",
+      "model": "claude-sonnet-5-5",
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 5,
+        "cacheRead": 24995,
+        "cacheWrite": 1000,
+        "output": 100,
+        "thinking": null
+      },
+      "blocks": [
+        {
+          "type": "tool_use",
+          "toolId": "t4"
+        }
+      ],
+      "tools": [
+        {
+          "id": "t4",
+          "name": "Bash",
+          "input": {
+            "command": "pnpm vitest run"
+          },
+          "pre": [
+            {
+              "event": "PreToolUse",
+              "name": "PreToolUse:Bash",
+              "outcome": "block",
+              "detail": "rm is not allowed",
+              "command": ""
+            }
+          ],
+          "post": [],
+          "result": {
+            "text": "Error: 1 failed",
+            "isError": true
+          },
+          "status": "error",
+          "subagent": null
+        }
+      ],
+      "hooks": []
+    },
+    {
+      "type": "api_error",
+      "ts": "2026-01-01T10:00:57.000Z",
+      "count": 2,
+      "message": "overloaded_error"
+    },
+    {
+      "type": "request",
+      "ts": "2026-01-01T10:01:03.000Z",
+      "model": "claude-sonnet-5-5",
+      "stopReason": "tool_use",
+      "usage": {
+        "input": 5,
+        "cacheRead": 28995,
+        "cacheWrite": 1000,
+        "output": 100,
+        "thinking": null
+      },
+      "blocks": [
+        {
+          "type": "tool_use",
+          "toolId": "t5"
+        }
+      ],
+      "tools": [
+        {
+          "id": "t5",
+          "name": "Agent",
+          "input": {
+            "description": "Find test helpers",
+            "subagent_type": "Explore",
+            "prompt": "..."
+          },
+          "pre": [],
+          "post": [],
+          "result": {
+            "text": "Helpers live in test/utils.ts",
+            "isError": false
+          },
+          "status": "ok",
+          "subagent": {
+            "toolCalls": 7,
+            "tokens": 41234,
+            "durationMs": 38000
+          }
+        }
+      ],
+      "hooks": []
+    },
+    {
+      "type": "compaction",
+      "ts": "2026-01-01T10:01:15.000Z",
+      "trigger": "auto",
+      "preTokens": 167000,
+      "summary": "This session is being continued.\nThe user asked for tests.",
+      "hooks": [
+        {
+          "event": "PreCompact",
+          "name": "PreCompact:auto",
+          "outcome": "ok",
+          "detail": "",
+          "command": "log.sh"
+        }
+      ]
+    },
+    {
+      "type": "request",
+      "ts": "2026-01-01T10:01:21.000Z",
+      "model": "claude-sonnet-5-5",
+      "stopReason": "end_turn",
+      "usage": {
+        "input": 5,
+        "cacheRead": 40995,
+        "cacheWrite": 1000,
+        "output": 100,
+        "thinking": null
+      },
+      "blocks": [
+        {
+          "type": "text",
+          "text": "I added 2 test files with 14 tests."
+        }
+      ],
+      "tools": [],
+      "hooks": []
+    },
+    {
+      "type": "stop_hooks",
+      "hooks": [
+        {
+          "event": "Stop",
+          "name": "Stop",
+          "outcome": "block",
+          "detail": "lint errors in date.test.ts",
+          "command": ""
+        }
+      ],
+      "commands": [
+        "pnpm lint"
+      ],
+      "errors": [
+        "lint errors in date.test.ts"
+      ],
+      "prevented": false,
+      "reason": ""
+    },
+    {
+      "type": "request",
+      "ts": "2026-01-01T10:01:30.000Z",
+      "model": "claude-sonnet-5-5",
+      "stopReason": "end_turn",
+      "usage": {
+        "input": 5,
+        "cacheRead": 42995,
+        "cacheWrite": 1000,
+        "output": 100,
+        "thinking": null
+      },
+      "blocks": [
+        {
+          "type": "text",
+          "text": "I fixed the lint errors."
+        }
+      ],
+      "tools": [],
+      "hooks": []
+    },
+    {
+      "type": "stop_hooks",
+      "ts": "2026-01-01T10:01:33.000Z",
+      "hooks": [],
+      "commands": [
+        "pnpm lint"
+      ],
+      "errors": [],
+      "prevented": false,
+      "reason": ""
+    },
+    {
+      "type": "command",
+      "ts": "2026-01-01T10:01:36.000Z",
+      "name": "/cost",
+      "args": "",
+      "output": "Total cost: $0.42",
+      "hooks": []
+    },
+    {
+      "type": "interrupt",
+      "ts": "2026-01-01T10:01:42.000Z"
+    },
+    {
+      "type": "notice",
+      "ts": "2026-01-01T10:01:45.000Z",
+      "text": "No response requested."
+    },
+    {
+      "type": "session_end",
+      "ts": "2026-01-01T10:01:48.000Z",
+      "hooks": [
+        {
+          "event": "SessionEnd",
+          "name": "SessionEnd",
+          "outcome": "ok",
+          "detail": "",
+          "command": ""
+        }
+      ]
+    }
+  ]
+}
