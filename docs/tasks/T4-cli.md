@@ -74,5 +74,5 @@ A session with no prompt shows `(no prompt)`.
 3. The page from `run` for the fixture holds the same steps as
    `test/golden/fixture.steps.json` (parse the JSON of the data block in the HTML).
 4. `node bin/session-trace.js --list` runs against the real profile and exits 0.
-5. `node --test test/cli/` passes, and `node --test test/` passes.
+5. `node --test 'test/cli/*.test.js'` passes, and `node --test` (no arguments) passes.
 6. `src/cli/run.js` is the only module that imports more than one layer.

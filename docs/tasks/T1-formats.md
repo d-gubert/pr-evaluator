@@ -70,5 +70,5 @@ Keep these rules from the old code:
 4. Smoke: every `*.jsonl` directly under `~/.claude/projects/*/` parses without a throw, and
    the first event is `session_start` and the last is `session_end`. Skip this test when the
    directory does not exist.
-5. `node --test test/formats/` passes. No file outside the list above changes.
+5. `node --test 'test/formats/*.test.js'` passes. No file outside the list above changes.
 6. `src/formats/` imports only node built-ins and model types.

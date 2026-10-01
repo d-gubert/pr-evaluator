@@ -72,5 +72,5 @@ U+2028 and U+2029 in the JSON (see the old `renderHtml`). The `<h1>` and the not
 4. Render tests: the HTML holds the step titles in the data block; a step title
    `</script><script>alert(1)</script>` does not end the data script (only the 2 real
    `</script>` tags remain); U+2028 is escaped.
-5. `node --test test/view/ test/render/` passes. No file outside the list above changes.
+5. `node --test 'test/view/*.test.js' 'test/render/*.test.js'` passes. No file outside the list above changes.
 6. `src/view/` and `src/render/` import nothing from `src/formats/`, `src/sources/`, or `src/cli/`.

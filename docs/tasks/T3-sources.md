@@ -65,5 +65,5 @@ export class AmbiguousSessionError extends Error { candidates /* string[] paths 
    `null`, ambiguous prefix throws `AmbiguousSessionError` with 2 candidates.
 4. A test shows that `list` reads at most 64 KiB per file (a 1 MiB file with the prompt after
    64 KiB gives `firstPrompt === ""`).
-5. `node --test test/sources/` passes. No file outside the list above changes.
+5. `node --test 'test/sources/*.test.js'` passes. No file outside the list above changes.
 6. `src/sources/` imports only node built-ins.

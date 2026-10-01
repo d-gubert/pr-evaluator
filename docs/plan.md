@@ -64,3 +64,5 @@ Dependency rules (an import from a lower row to a higher row is not allowed):
 - Do not commit. Do not push. The lead reviews and commits.
 - The old `session-trace.mjs` is the reference for behavior. Copy logic from it, but
   do not import it.
+- Node 22 does not take a directory as a `node --test` argument. Use a glob, for example
+  `node --test 'test/cli/*.test.js'`, or `node --test` with no argument to run every test.
