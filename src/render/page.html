@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>/*__HARNESS__*/ Session Trace</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --sunk:#eceef2; --ink:#1b1f27; --ink-2:#555c6b; --ink-3:#8a90a0;
+  --line:#dde0e7; --line-2:#c3c8d3;
+  --loop:#5b50c8; --http:#15876a; --tool:#c4552b; --hook:#a86a0f; --ui:#6f7584;
+  --focus:#5b50c8;
+  --sans:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#12151b; --surface:#1a1e26; --sunk:#0d1015; --ink:#e6e8ee; --ink-2:#a5abb9; --ink-3:#737a8a;
+    --line:#2a2f3a; --line-2:#3a404d;
+    --loop:#9d95f0; --http:#4cc7a0; --tool:#f08a60; --hook:#e0a84a; --ui:#9aa0ae; --focus:#9d95f0;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#12151b; --surface:#1a1e26; --sunk:#0d1015; --ink:#e6e8ee; --ink-2:#a5abb9; --ink-3:#737a8a;
+  --line:#2a2f3a; --line-2:#3a404d;
+  --loop:#9d95f0; --http:#4cc7a0; --tool:#f08a60; --hook:#e0a84a; --ui:#9aa0ae; --focus:#9d95f0;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.55;padding-inline:16px;padding-block:32px 48px}
+.wrap{max-width:1040px;margin:0 auto;display:grid;gap:24px}
+header h1{font-size:26px;font-weight:600;letter-spacing:-.01em;margin:0 0 6px;text-wrap:balance}
+header p{margin:0;color:var(--ink-2);max-width:68ch}
+header code{font-family:var(--mono);font-size:13px;background:var(--sunk);padding:1px 6px;border-radius:4px;overflow-wrap:anywhere}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:13px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:10px;height:10px;border-radius:2px;flex:none;background:var(--c)}
+.track{display:flex;gap:3px;align-items:stretch;overflow:hidden}
+.track.dense{gap:1px}
+.track button{flex:1;min-width:0;height:28px;border:0;padding:0;border-radius:3px;background:var(--sunk);cursor:pointer;display:flex;flex-direction:column;gap:2px;padding:3px}
+.track.dense button{padding:2px 0;border-radius:1px}
+.track button i{flex:1;border-radius:2px;background:var(--c);opacity:.35;display:block}
+.track button.on{outline:2px solid var(--focus);outline-offset:1px}
+.track button.on i,.track button:hover i{opacity:1}
+.track-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--ink-3);margin-top:6px;letter-spacing:.04em;text-transform:uppercase}
+.main{display:grid;grid-template-columns:minmax(0,260px) minmax(0,1fr);gap:24px;align-items:start}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:2px;max-height:75vh;overflow-y:auto}
+.steps button{width:100%;text-align:left;display:flex;gap:10px;align-items:center;background:none;border:1px solid transparent;border-radius:6px;padding:7px 10px;font:inherit;font-size:13.5px;color:var(--ink-2);cursor:pointer}
+.steps button span:last-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.steps button:hover{background:var(--surface)}
+.steps button.on{background:var(--surface);border-color:var(--line-2);color:var(--ink);font-weight:500}
+.steps .n{font-family:var(--mono);font-size:11px;color:var(--ink-3);min-width:18px;flex:none;font-variant-numeric:tabular-nums}
+.panel{display:grid;gap:14px}
+.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{font:inherit;font-size:13.5px;background:var(--surface);color:var(--ink);border:1px solid var(--line-2);border-radius:6px;padding:6px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{border-color:var(--ink-3)}
+button:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+.pos{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.meters{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:12px}
+.meter{background:var(--sunk);border-radius:8px;padding:10px 14px}
+.meter .k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+.meter .v{font-family:var(--mono);font-size:22px;font-weight:500;font-variant-numeric:tabular-nums}
+.bar{height:6px;background:var(--line);border-radius:3px;margin-top:12px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--loop);border-radius:3px;transition:width .35s ease}
+.meter .sub{font-family:var(--mono);font-size:12px;color:var(--ink-2);margin-top:6px;font-variant-numeric:tabular-nums}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px 20px;display:grid;gap:10px;min-width:0}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:500;padding:2px 9px 2px 7px;border-radius:999px;border:1px solid var(--c);color:var(--c)}
+.tag .sw{width:7px;height:7px;border-radius:50%}
+.card h2{font-size:18px;font-weight:600;margin:0;overflow-wrap:anywhere}
+.card p{margin:0;color:var(--ink-2);max-width:65ch}
+pre{margin:0;font-family:var(--mono);font-size:12.5px;line-height:1.6;background:var(--sunk);border-radius:8px;padding:12px 14px;overflow:auto;max-height:60vh;white-space:pre;color:var(--ink)}
+.note{font-size:13px;color:var(--ink-3);margin:0;overflow-wrap:anywhere}
+@media (max-width:720px){
+  .main{grid-template-columns:minmax(0,1fr)}
+  .steps{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));max-height:40vh}
+  .steps button{font-size:12.5px;padding:6px 8px}
+  .meters{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){.bar i{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>/*__HARNESS__*/ session trace</h1>
+    <p id="intro"></p>
+  </header>
+
+  <div class="legend" aria-label="Legend">
+    <span><i class="sw" style="--c:var(--loop)"></i>Agent loop</span>
+    <span><i class="sw" style="--c:var(--http)"></i>HTTP API request</span>
+    <span><i class="sw" style="--c:var(--tool)"></i>Tool call</span>
+    <span><i class="sw" style="--c:var(--hook)"></i>Hook</span>
+    <span><i class="sw" style="--c:var(--ui)"></i>User / UI</span>
+  </div>
+
+  <div>
+    <div class="track" id="track" aria-label="Session timeline"></div>
+    <div class="track-labels"><span>Start</span><span id="turns"></span><span>Exit</span></div>
+  </div>
+
+  <div class="main">
+    <ol class="steps" id="steps"></ol>
+    <div class="panel">
+      <div class="controls">
+        <button class="btn" id="prev" aria-label="Previous step">&larr; Previous</button>
+        <button class="btn" id="next" aria-label="Next step">Next &rarr;</button>
+        <button class="btn" id="play">&#9654; Play</button>
+        <span class="pos" id="pos"></span>
+      </div>
+      <div class="meters">
+        <div class="meter"><div class="k">Loop turn</div><div class="v" id="turn">–</div></div>
+        <div class="meter"><div class="k">Context in messages[]</div><div class="bar"><i id="ctx"></i></div><div class="sub" id="ctxl"></div></div>
+      </div>
+      <article class="card" aria-live="polite">
+        <div class="tags" id="tags"></div>
+        <h2 id="title"></h2>
+        <p id="desc"></p>
+        <pre id="code"></pre>
+      </article>
+      <p class="note" id="note"></p>
+    </div>
+  </div>
+</div>
+
+<script type="application/json" id="data">/*__DATA__*/</script>
+<script>
+const D=JSON.parse(document.getElementById('data').textContent);
+const S=D.steps,M=D.meta;
+const C={loop:'var(--loop)',http:'var(--http)',tool:'var(--tool)',hook:'var(--hook)',ui:'var(--ui)'};
+const N={loop:'Agent loop',http:'HTTP',tool:'Tool',hook:'Hook',ui:'User / UI'};
+let i=0,timer=null;
+const $=id=>document.getElementById(id);
+const steps=$('steps'),track=$('track');
+const code=t=>{const c=document.createElement('code');c.textContent=t;return c};
+const clip=(t,n)=>t.length>n?t.slice(0,n-1)+'…':t;
+(function intro(){
+  const p=$('intro');
+  p.append('Session ',code(M.sessionId||'unknown'));
+  if(M.firstPrompt)p.append(' for the prompt ',code(clip(M.firstPrompt.replace(/\s+/g,' '),120)));
+  if(M.gitBranch)p.append(' on the branch ',code(M.gitBranch));
+  p.append('. Step through it to see where the agent loop, the HTTP API requests, the tool calls, and the hooks happen.');
+  $('turns').textContent=M.turns?(M.turns>1?'Loop turns 1–'+M.turns:'Loop turn 1'):'No loop turns';
+  $('note').textContent='The data comes from '+(M.file||'the session transcript')+'. The page shows only the hooks that '+(M.harnessName||'the harness')+' writes to the transcript. Subagent turns are not in this view.';
+  if(M.sessionId)document.title='Session trace '+M.sessionId.slice(0,8);
+})();
+if(S.length>80)track.classList.add('dense');
+S.forEach((s,n)=>{
+  const li=document.createElement('li');
+  const b=document.createElement('button');
+  b.type='button';
+  b.innerHTML='<span class="n">'+String(n+1).padStart(2,'0')+'</span><i class="sw" style="--c:'+C[s.k[0]]+'"></i><span></span>';
+  b.lastChild.textContent=s.t;
+  b.title=s.t;
+  b.onclick=()=>{i=n;render()};
+  li.appendChild(b);steps.appendChild(li);
+  const t=document.createElement('button');
+  t.type='button';t.title=s.t;t.setAttribute('aria-label','Step '+(n+1)+': '+s.t);
+  t.innerHTML=s.k.map(k=>'<i style="--c:'+C[k]+'"></i>').join('');
+  t.onclick=()=>{i=n;render()};
+  track.appendChild(t);
+});
+const fmt=n=>n>=1e6?(n/1e6).toFixed(2)+'M':n>=1e3?Math.round(n/1e3)+'k':String(n);
+function render(){
+  const s=S[i];
+  [...steps.querySelectorAll('button')].forEach((b,n)=>{b.classList.toggle('on',n===i);if(n===i)b.scrollIntoView({block:'nearest'})});
+  [...track.children].forEach((b,n)=>b.classList.toggle('on',n===i));
+  $('title').textContent=s.t;
+  $('desc').textContent=s.d;
+  $('code').textContent=s.c;
+  $('tags').innerHTML=s.k.map(k=>'<span class="tag" style="--c:'+C[k]+'"><i class="sw"></i>'+N[k]+'</span>').join('');
+  const when=s.ts&&!isNaN(Date.parse(s.ts))?' · '+new Date(s.ts).toLocaleTimeString():'';
+  $('pos').textContent='Step '+(i+1)+' / '+S.length+when;
+  $('turn').textContent=s.turn?s.turn:'–';
+  $('ctx').style.width=Math.min(100,s.ctx/M.window*100)+'%';
+  $('ctxl').textContent=s.ctx?fmt(s.ctx)+' / '+fmt(M.window)+' tokens':'no request yet';
+}
+function go(d){i=(i+d+S.length)%S.length;render()}
+$('prev').onclick=()=>go(-1);
+$('next').onclick=()=>go(1);
+$('play').onclick=()=>{
+  const b=$('play');
+  if(timer){clearInterval(timer);timer=null;b.innerHTML='&#9654; Play'}
+  else{timer=setInterval(()=>go(1),2200);b.innerHTML='&#10074;&#10074; Pause'}
+};
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight')go(1);
+  if(e.key==='ArrowLeft')go(-1);
+});
+render();
+</script>
+</body>
+</html>
