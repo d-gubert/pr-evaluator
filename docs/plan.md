@@ -1,4 +1,4 @@
-# Plan: session-trace CLI
+# Plan: yast CLI
 
 ## Goal
 
@@ -14,7 +14,7 @@ The CLI reads a session log and writes the step-through HTML page.
 ## Architecture
 
 ```
-bin/session-trace.ts        entry: calls run(argv, io)
+bin/yast.ts        entry: calls run(argv, io)
 src/cli/                    args, run, pick, list table          (T4)
 src/sources/                find session files on disk            (T3)
 src/formats/                parse one log file → Session          (T1)
@@ -24,7 +24,7 @@ src/render/                 View → HTML (page.html: the template) (T2)
 dist/                       build output of tsc (not in git)      (T6)
 ```
 
-All files are TypeScript (T6). `npm run build` compiles to `dist/` and copies `src/render/page.html`; the `bin` of `package.json` is `dist/bin/session-trace.js`. In the module names below, `.js` is the name of a module in an import (NodeNext); the file is `.ts`.
+All files are TypeScript (T6). `npm run build` compiles to `dist/` and copies `src/render/page.html`; the `bin` of `package.json` is `dist/bin/yast.js`. In the module names below, `.js` is the name of a module in an import (NodeNext); the file is `.ts`.
 
 Data flow: `source → path → format.parse → Session → toView → renderHtml → file`.
 

@@ -39,7 +39,7 @@ const EXIT = {
   interrupted: 130,
 } as const satisfies Readonly<Record<string, ExitCode>>;
 
-const NAME = 'session-trace';
+const NAME = 'yast';
 
 /**
  * @param argv  the arguments after the script name

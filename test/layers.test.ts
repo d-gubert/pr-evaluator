@@ -55,7 +55,7 @@ test('the source files are found', () => {
 
 test('every import follows the layer table of docs/plan.md', () => {
   const problems: string[] = [];
-  for (const file of [...files, join(ROOT, 'bin', 'session-trace.ts')]) {
+  for (const file of [...files, join(ROOT, 'bin', 'yast.ts')]) {
     const layer = layerOf(file);
     for (const imp of importsOf(file)) {
       if (imp.specifier.startsWith('node:')) continue;

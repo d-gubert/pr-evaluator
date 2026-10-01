@@ -14,6 +14,6 @@ try {
     columns: process.stdout.columns ?? process.stderr.columns,
   });
 } catch (e) {
-  process.stderr.write(`session-trace: ${e instanceof Error ? e.message : String(e)}\n`);
+  process.stderr.write(`yast: ${e instanceof Error ? e.message : String(e)}\n`);
   process.exitCode = 1;
 }

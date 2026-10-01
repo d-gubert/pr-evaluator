@@ -1,4 +1,4 @@
-// End-to-end tests: run the compiled dist/bin/session-trace.js as a child process.
+// End-to-end tests: run the compiled dist/bin/yast.js as a child process.
 // Each test uses a temporary profile (CLAUDE_CONFIG_DIR) and a temporary cwd.
 // Nothing touches ~/.claude or the repo tree.
 import { test, before, after, beforeEach } from 'node:test';
@@ -18,7 +18,7 @@ let cwd: string;
 let sessionPath: string;
 
 before(async () => {
-  tmp = await mkdtemp(join(tmpdir(), 'session-trace-e2e-'));
+  tmp = await mkdtemp(join(tmpdir(), 'yast-e2e-'));
   profile = join(tmp, 'profile');
   home = join(tmp, 'home');
   await mkdir(home);
@@ -50,7 +50,7 @@ const exists = (p: string) => access(p).then(() => true, () => false);
 test('--help exits 0 and shows the usage', () => {
   const r = cli(['--help']);
   assert.equal(r.code, 0);
-  assert.match(r.stdout, /^usage: session-trace/);
+  assert.match(r.stdout, /^usage: yast/);
 });
 
 test('--version prints the package version', () => {

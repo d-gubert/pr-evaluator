@@ -131,7 +131,7 @@ export function parseArgs(argv: readonly string[]): Args {
 }
 
 export function helpText(formatIds: readonly string[]): string {
-  return `usage: session-trace [options] [session]
+  return `usage: yast [options] [session]
 
   session            path to a session log, or a session ID (or a unique ID prefix)
   -o, --output FILE  write the page to FILE

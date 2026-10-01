@@ -21,7 +21,7 @@ export const FIXTURE = join(ROOT, 'test', 'fixture.jsonl');
 export const GOLDEN_SESSION = join(ROOT, 'test', 'golden', 'fixture.session.json');
 export const GOLDEN_STEPS = join(ROOT, 'test', 'golden', 'fixture.steps.json');
 /** The compiled CLI. The tests run after the build. */
-export const BIN = join(ROOT, 'dist', 'bin', 'session-trace.js');
+export const BIN = join(ROOT, 'dist', 'bin', 'yast.js');
 export const SRC_DIR = join(ROOT, 'src');
 
 /** The version in package.json. */

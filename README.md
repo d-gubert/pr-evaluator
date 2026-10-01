@@ -1,10 +1,32 @@
-# session-trace
+# yast
 
-`session-trace` reads a Claude Code session log (`.jsonl`). It writes one HTML page that shows the session step by step. The page uses the layout of the "Claude Code session trace" artifact, with real data instead of a simulation.
+**yast** means **Yet Another Session Tracer**. It reads a Claude Code session log (`.jsonl`). It writes one HTML page that shows the session step by step. The page uses the layout of the "Claude Code session trace" artifact, with real data instead of a simulation.
 
 The tool is written in TypeScript. It has no runtime dependencies and needs Node.js 18 or later. To build it, you need `typescript` and `@types/node` (dev dependencies, installed by `npm install`).
 
 > **Warning:** The page contains the prompts, the tool inputs, and the tool results of the session. These can include secrets, file contents, and private paths. Read the page before you share it.
+
+## Quick start
+
+1. Install the dependencies and build the tool:
+
+   ```sh
+   npm install
+   ```
+
+2. Link the command:
+
+   ```sh
+   npm link
+   ```
+
+3. Run yast with no argument. Pick a session from the list:
+
+   ```sh
+   yast
+   ```
+
+4. Open the file `<session-id>.trace.html` from the current directory in a browser.
 
 ## Install
 
@@ -12,51 +34,51 @@ Build the tool, then run it from the repository:
 
 ```sh
 npm install      # installs the dev dependencies, and builds to dist/ (the "prepare" script)
-node dist/bin/session-trace.js --help
+node dist/bin/yast.js --help
 ```
 
-Or link it, to get the `session-trace` command:
+Or link it, to get the `yast` command:
 
 ```sh
 npm link
-session-trace --help
+yast --help
 ```
 
-`npm run build` compiles `bin/`, `src/`, and `test/` to `dist/` with `tsc`, and copies `src/render/page.html` to `dist/src/render/`. Build again after you change a source file. `dist/` is not in git.
+`npm run build` compiles `bin/`, `src/`, and `test/` to `dist/` with `tsc`. It also copies `src/render/page.html` to `dist/src/render/`. Build again after you change a source file. `dist/` is not in git.
 
 ## Usage
 
 ```sh
 # List the sessions and pick one
-session-trace
+yast
 
 # Use a session file, a session ID, or the start of an ID
-session-trace ~/.claude/projects/-home-me-app/5690d737-0b97-5806-b338-6ce2108dabab.jsonl
-session-trace 5690d737-0b97-5806-b338-6ce2108dabab
-session-trace 5690d737
+yast ~/.claude/projects/-home-me-app/5690d737-0b97-5806-b338-6ce2108dabab.jsonl
+yast 5690d737-0b97-5806-b338-6ce2108dabab
+yast 5690d737
 
 # Choose the output file, or write to stdout
-session-trace <session> -o out/trace.html
-session-trace <session> --stdout > trace.html
+yast <session> -o out/trace.html
+yast <session> --stdout > trace.html
 
 # Only list the sessions
-session-trace --list
-session-trace --list -n 50
+yast --list
+yast --list -n 50
 ```
 
-An ID prefix must have at least 4 characters. If more than one session matches, the tool prints the paths and exits with code 1.
+An ID prefix must have at least 4 characters. If more than one session matches, yast prints the paths and exits with code 1.
 
 ### No session argument
 
-If you give no session, the tool lists the sessions of the profile directory, newest first.
+If you give no session, yast lists the sessions of the profile directory, newest first.
 
-- In a terminal, the tool asks you to pick one. Type a number and press Enter. Press Enter alone to pick 1. Type `q` to quit (exit code 130). After 3 wrong answers, the tool exits with code 2.
-- Without a terminal, the tool prints the list and exits with code 2. Pass a session path or ID to avoid this.
+- In a terminal, yast asks you to pick one. Type a number and press Enter. Press Enter alone to pick 1. Type `q` to quit (exit code 130). After 3 wrong answers, yast exits with code 2.
+- Without a terminal, yast prints the list and exits with code 2. Pass a session path or ID to avoid this.
 
 ## Options
 
 ```
-usage: session-trace [options] [session]
+usage: yast [options] [session]
 
   session            path to a session log, or a session ID (or a unique ID prefix)
   -o, --output FILE  write the page to FILE
@@ -72,21 +94,21 @@ Rules:
 
 - `-o` and `--stdout` cannot be used together.
 - `--list` cannot be used with a session, `-o`, or `--stdout`.
-- `-f` selects a format by its ID. Without `-f`, the tool detects the format from the file.
+- `-f` selects a format by its ID. Without `-f`, yast detects the format from the file.
 - `-o` does not create directories. The directory of `FILE` must exist.
 
 ### Exit codes
 
 | Code | Meaning |
 | --- | --- |
-| 0 | The tool did its job. |
+| 0 | yast did its job. |
 | 1 | Error: no such session, no sessions found, unknown log format, or a file error. |
 | 2 | Usage error, or no session argument without a terminal. |
 | 130 | You quit the picker. |
 
 ## The profile directory
 
-The tool looks for sessions in the profile directory of Claude Code:
+yast looks for sessions in the profile directory of Claude Code:
 
 - If `CLAUDE_CONFIG_DIR` is set, the profile directory is `$CLAUDE_CONFIG_DIR`.
 - Otherwise, it is `~/.claude`.
@@ -94,18 +116,18 @@ The tool looks for sessions in the profile directory of Claude Code:
 The session files are `<profile>/projects/*/*.jsonl`. Set `CLAUDE_CONFIG_DIR` to read the sessions of another profile:
 
 ```sh
-CLAUDE_CONFIG_DIR=~/.claude-work session-trace --list
+CLAUDE_CONFIG_DIR=~/.claude-work yast --list
 ```
 
 ## Output rules
 
-1. With `--stdout`, the tool writes the page to stdout. It writes no file.
-2. With `-o FILE`, the tool writes the page to `FILE`. A relative path starts at the current directory.
-3. Otherwise, the tool writes `<session-id>.trace.html` in the current directory. The session ID is the file name without `.jsonl`.
+1. With `--stdout`, yast writes the page to stdout. It writes no file.
+2. With `-o FILE`, yast writes the page to `FILE`. A relative path starts at the current directory.
+3. Otherwise, yast writes `<session-id>.trace.html` in the current directory. The session ID is the file name without `.jsonl`.
 
-When the tool writes a file, it prints the input path, the output path, and the number of steps and loop turns to stderr.
+When yast writes a file, it prints the input path, the output path, and the number of steps and loop turns to stderr.
 
-## The view
+## How to read the page
 
 The page has these parts:
 
@@ -114,6 +136,8 @@ The page has these parts:
 - A list of steps, the Previous, Next, and Play controls, and the arrow keys.
 - A "Loop turn" meter and a "Context in messages[]" meter.
 - A card for each step with tags, a title, a description, and a code block.
+
+To move through the session, press the left and right arrow keys. Press Play to step through the session automatically.
 
 ## How the transcript maps to steps
 
@@ -135,10 +159,19 @@ The table shows the Claude Code format. A format module turns these records into
 
 The context meter shows `input_tokens + cache_read_input_tokens + cache_creation_input_tokens` of each request. The window is 200k tokens. If the model name contains `[1m]` or a request uses more than 200k tokens, the window is 1M tokens.
 
-## Module layout
+## Limits
+
+- The page shows only the hooks that Claude Code writes to the transcript. Some versions of Claude Code do not write all hook events.
+- The page does not show the turns of subagents. The Agent tool step shows the totals of the subagent: tool calls, tokens, and time.
+- The transcript format is not a public API. A new version of Claude Code can change it. The parser ignores record types that it does not know.
+- yast reads sessions from the Claude Code profile directory only. For a log in another place, pass its path.
+
+## Development
+
+### Module layout
 
 ```
-bin/session-trace.ts   entry: builds the real I/O and calls run()
+bin/yast.ts   entry: builds the real I/O and calls run()
 src/cli/               args, run, session picker, session list table
 src/sources/           find session files on disk
 src/formats/           parse one log file into a Session
@@ -168,14 +201,7 @@ What a type cannot say is checked at run time: that a `tool_use` block has its c
 
 To support the logs of another harness, add a format module. See [docs/adding-a-format.md](docs/adding-a-format.md).
 
-## Limits
-
-- The page shows only the hooks that Claude Code writes to the transcript. Some versions of Claude Code do not write all hook events.
-- The page does not show the turns of subagents. The Agent tool step shows the totals of the subagent: tool calls, tokens, and time.
-- The transcript format is not a public API. A new version of Claude Code can change it. The parser ignores record types that it does not know.
-- The tool reads sessions from the Claude Code profile directory only. For a log in another place, pass its path.
-
-## Test
+### Test
 
 ```sh
 npm run typecheck   # tsc --noEmit: the type rules, and the type tests of the invariants
@@ -189,4 +215,4 @@ npm run build
 node --test 'dist/test/e2e/*.test.js'
 ```
 
-The tests use `test/fixture.jsonl` and the golden files in `test/golden/`. The fixture has hooks, a rejected tool call, a PreToolUse block, API errors, a subagent, a compaction, a blocking Stop hook, a slash command, and an interruption. The end-to-end tests run the compiled CLI (`dist/bin/session-trace.js`) as a child process. They use a temporary profile and a temporary directory.
+The tests use `test/fixture.jsonl` and the golden files in `test/golden/`. The fixture has hooks, a rejected tool call, a PreToolUse block, API errors, a subagent, a compaction, a blocking Stop hook, a slash command, and an interruption. The end-to-end tests run the compiled CLI (`dist/bin/yast.js`) as a child process. They use a temporary profile and a temporary directory.

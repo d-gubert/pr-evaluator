@@ -98,7 +98,7 @@ test('an unknown ID gives exit 1', async () => {
   const { code, out, err } = await go(['zzzz9999']);
   assert.equal(code, 1);
   assert.equal(out, '');
-  assert.equal(err, 'session-trace: no session file or ID "zzzz9999"\n');
+  assert.equal(err, 'yast: no session file or ID "zzzz9999"\n');
   assert.deepEqual(await readdir(cwd), []);
 });
 
@@ -176,7 +176,7 @@ test('interactive: three wrong answers give exit 2', async () => {
   const { code, out, err } = await go([], { interactive: true, input: 'a\nb\n0\n1\n' });
   assert.equal(code, 2);
   assert.equal(out, '');
-  assert.match(err, /session-trace: no valid session number\nTry "session-trace --help"\.\n$/);
+  assert.match(err, /yast: no valid session number\nTry "yast --help"\.\n$/);
   assert.deepEqual(await readdir(cwd), []);
 });
 
@@ -184,7 +184,7 @@ test('not interactive without a session: the list to stdout, a hint to stderr, e
   const { code, out, err } = await go([]);
   assert.equal(code, 2);
   assert.equal(out.trimEnd().split('\n').length, 2);
-  assert.equal(err, 'session-trace: pass a session path or ID\n');
+  assert.equal(err, 'yast: pass a session path or ID\n');
   assert.deepEqual(await readdir(cwd), []);
 });
 
@@ -196,7 +196,7 @@ test('an empty profile gives exit 1', async () => {
       const { code, out, err } = await go(argv, { config: empty, interactive });
       assert.equal(code, 1);
       assert.equal(out, '');
-      assert.equal(err, `session-trace: no sessions in ${join(empty, 'projects')}\n`);
+      assert.equal(err, `yast: no sessions in ${join(empty, 'projects')}\n`);
     }
   }
 });
@@ -230,13 +230,13 @@ test('-o with --stdout is a usage error', async () => {
   const { code, out, err } = await go([pathA, '-o', 'x.html', '--stdout']);
   assert.equal(code, 2);
   assert.equal(out, '');
-  assert.match(err, /^session-trace: .*\nTry "session-trace --help"\.\n$/);
+  assert.match(err, /^yast: .*\nTry "yast --help"\.\n$/);
 });
 
 test('an unknown option is a usage error', async () => {
   const { code, err } = await go(['--nope']);
   assert.equal(code, 2);
-  assert.match(err, /unknown option "--nope"\nTry "session-trace --help"\.\n$/);
+  assert.match(err, /unknown option "--nope"\nTry "yast --help"\.\n$/);
 });
 
 test('the page holds the steps of the golden file', async () => {
@@ -260,7 +260,7 @@ test('--format nope is a usage error', async () => {
   const { code, out, err } = await go([pathA, '--format', 'nope']);
   assert.equal(code, 2);
   assert.equal(out, '');
-  assert.match(err, /unknown format "nope" \(known: claude-code\)\nTry "session-trace --help"\.\n$/);
+  assert.match(err, /unknown format "nope" \(known: claude-code\)\nTry "yast --help"\.\n$/);
   assert.deepEqual(await readdir(cwd), []);
 });
 
@@ -269,7 +269,7 @@ test('a file that no format matches gives exit 1', async () => {
   const { code, out, err } = await go(['notes.txt']);
   assert.equal(code, 1);
   assert.equal(out, '');
-  assert.match(err, /^session-trace: no known format matches notes\.txt\n$/);
+  assert.match(err, /^yast: no known format matches notes\.txt\n$/);
 });
 
 // ------------------------------------------------------------ help and version
@@ -278,7 +278,7 @@ test('--help prints the usage to stdout and exits 0', async () => {
   const { code, out, err } = await go(['--help']);
   assert.equal(code, 0);
   assert.equal(err, '');
-  assert.match(out, /^usage: session-trace/);
+  assert.match(out, /^usage: yast/);
   assert.match(out, /claude-code/);
 });
 

@@ -1,18 +1,18 @@
 {
-  "name": "claude-session-trace",
+  "name": "yast",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "description": "Turn a Claude Code session transcript into a step-through trace page.",
   "bin": {
-    "session-trace": "./dist/bin/session-trace.js"
+    "yast": "./dist/bin/yast.js"
   },
   "scripts": {
     "build": "node scripts/dist.mjs clean && tsc && node scripts/dist.mjs assets",
     "typecheck": "tsc --noEmit",
     "prepare": "npm run build",
     "test": "npm run build && node --test 'dist/test/**/*.test.js'",
-    "trace": "node dist/bin/session-trace.js"
+    "trace": "node dist/bin/yast.js"
   },
   "files": [
     "dist",

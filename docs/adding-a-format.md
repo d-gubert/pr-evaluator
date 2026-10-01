@@ -165,7 +165,7 @@ The order matters: `detectFormat` returns the first format whose `detect` is `tr
 
 ## Add a source for its session files
 
-A format reads a file. A source finds files. If the harness stores its sessions in a known place, add a source so that `session-trace` and `session-trace --list` find them. If you only need `session-trace <path>`, skip this step.
+A format reads a file. A source finds files. If the harness stores its sessions in a known place, add a source so that `yast` and `yast --list` find them. If you only need `yast <path>`, skip this step.
 
 The type is in `src/sources/index.ts`:
 
@@ -196,4 +196,4 @@ The CLI merges the lists of all sources, sorts them by time, and tries each sour
 - Put a small log in `test/` and a test in `test/formats/<id>.test.ts`. Use `node:test` and `node:assert/strict`. The tests are TypeScript. `npm test` builds the project and runs the compiled tests from `dist/test/`.
 - Check the Session against the rules above. The test for Claude Code compares the output with `test/golden/fixture.session.json`. `test/support/decode.ts` has `decodeSession` (checks that JSON is a valid `Session`) and `findViolations` (checks that every `tool_use` block has its call).
 - Run `npm run typecheck` for the type rules, and `npm test` for the tests. To run only the format tests after a build: `node --test 'dist/test/formats/*.test.js'`.
-- Do a manual check: `npm run build && node dist/bin/session-trace.js --format my-harness path/to/log --stdout`.
+- Do a manual check: `npm run build && node dist/bin/yast.js --format my-harness path/to/log --stdout`.
